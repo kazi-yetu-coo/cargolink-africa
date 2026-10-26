@@ -1,4 +1,5 @@
 import { createClient } from './vendor/supabase.js';
+import { verification, admin, notifications, messages } from './workflows.js';
 
 // Public browser credentials for the existing CargoLink project; RLS enforces access.
 const db = createClient('https://iacahumfwacpknggqjtd.supabase.co', 'sb_publishable_zFpKvhZPkptRkV-9JQNn4A_yM-4-wM7');
@@ -72,7 +73,7 @@ function companySelector() {
 }
 function account() {
   if (!user) return `<div class="container"><section class="panel narrow"><p class="eyebrow">Welcome to CargoLink</p><h1>${authMode === 'signup' ? 'Create your account' : 'Good to see you.'}</h1><p class="muted">${pending ? 'Your quotation request is saved. Sign in to continue.' : 'Manage cargo requests and freight quotations in one place.'}</p><form id="auth-form"><label>Email address<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="${authMode === 'signup' ? 'new-password' : 'current-password'}" ${authMode === 'signup' ? 'minlength="8"' : ''} required></label><div class="actions"><button type="submit">${authMode === 'signup' ? 'Create account' : 'Sign in'}</button><button type="button" class="secondary" id="auth-toggle">${authMode === 'signup' ? 'Back to sign in' : 'Create an account'}</button></div>${authMode === 'signup' ? '<p class="muted">Use at least 8 characters. You may need to confirm your email before signing in.</p>' : ''}</form></section></div>`;
-  return `<div class="container"><section class="panel narrow"><p class="eyebrow">Your account</p><h1>${company ? esc(company.name) : 'Register your company'}</h1><p class="muted">${esc(user.email)}</p>${company ? `${companySelector()}<p>${esc(roles[company.role])}</p><p>Verification: <span class="badge">${esc(company.verification_status)}</span></p>${company.role !== 'shipper' && company.verification_status !== 'verified' ? '<div class="banner">Only verified providers can submit quotations. Your company verification is managed by the CargoLink team.</div>' : ''}<div class="actions"><a class="button" href="#dashboard">Open dashboard →</a><button id="logout" class="secondary">Sign out</button></div>` : `<p class="muted">Connect your business to your account. You can also publish a request as an individual customer.</p><form id="company-form"><label>Company name<input name="companyName" minlength="2" maxlength="200" required autocomplete="organization"></label><label>Company type<select name="companyRole">${Object.entries(roles).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label><button type="submit">Register company</button></form><div class="actions">${pending ? '<button id="publish-individual" class="secondary">Publish as individual customer</button>' : '<a href="#home" class="button secondary">Request a quote</a>'}<button id="logout" class="secondary">Sign out</button></div>`}${pending && company ? '<div class="banner">Your request is ready to publish.</div><button id="publish-individual">Publish saved request →</button>' : ''}</section></div>`;
+  return `<div class="container"><section class="panel narrow"><p class="eyebrow">Your account</p><h1>${company ? esc(company.name) : 'Register your company'}</h1><p class="muted">${esc(user.email)}</p>${company ? `${companySelector()}<p>${esc(roles[company.role])}</p><p>Verification: <span class="badge">${esc(company.verification_status)}</span></p>${company.role !== 'shipper' && company.verification_status !== 'verified' ? '<div class="banner">Only verified providers can submit quotations. Your company verification is managed by the CargoLink team.</div>' : ''}<div class="actions"><a class="button" href="#dashboard">Open dashboard →</a>${company.role !== 'shipper' ? '<a class="button secondary" href="#verify">Provider verification</a>' : ''}<button id="logout" class="secondary">Sign out</button></div>` : `<p class="muted">Connect your business to your account. You can also publish a request as an individual customer.</p><form id="company-form"><label>Company name<input name="companyName" minlength="2" maxlength="200" required autocomplete="organization"></label><label>Company type<select name="companyRole">${Object.entries(roles).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label><button type="submit">Register company</button></form><div class="actions">${pending ? '<button id="publish-individual" class="secondary">Publish as individual customer</button>' : '<a href="#home" class="button secondary">Request a quote</a>'}<button id="logout" class="secondary">Sign out</button></div>`}${pending && company ? '<div class="banner">Your request is ready to publish.</div><button id="publish-individual">Publish saved request →</button>' : ''}</section></div>`;
 }
 function summary(r) {
   const d = r.details || {};
@@ -90,7 +91,10 @@ async function listing(mine) {
   const rows = check(await query) || [];
   let bids = [];
   if (mine) bids = check(await db.from('bids').select('*,rfqs(id,service,details,status)').eq('provider_id', user.id).order('created_at', { ascending: false }).limit(100)) || [];
-  return `<div class="container"><div class="section-head"><div><p class="eyebrow">${mine ? 'Your freight workspace' : 'Find your next opportunity'}</p><h1>${mine ? 'Dashboard' : 'RFQ Marketplace'}</h1><p class="muted">${mine ? 'Track your requests, quotations and awarded freight.' : 'Open cargo requests. Connect your expertise with the right shipment.'}</p></div><a href="#home" class="button">New freight request ↗</a></div>${mine ? `${!company ? '<div class="banner">Complete your business profile. <a href="#account"><u>Register your company →</u></a></div>' : `<div class="banner">${companySelector()}${esc(company.name)} · ${esc(roles[company.role])} · ${esc(company.verification_status)} <a href="#account"><u>Manage account</u></a></div>`}<div class="stats"><div class="stat"><b>${rows.length}</b><span>Recent requests</span></div><div class="stat"><b>${rows.filter(r => r.status === 'open').length}</b><span>Open requests</span></div><div class="stat"><b>${bids.length}</b><span>Recent quotations</span></div></div>` : ''}<section class="panel"><h2>${mine ? 'My cargo requests' : 'Open requests'}</h2>${rows.map(rfqRow).join('') || '<div class="empty">No requests here yet. Start with a new freight request.</div>'}<p class="muted">Showing up to 100 most recent requests.</p></section>${mine ? `<section class="panel"><h2>My submitted quotations</h2>${bids.map(b => `<article class="record"><div><span class="badge">${esc(b.status)}</span><h3>${esc(b.rfqs ? summary(b.rfqs) : 'Freight request')}</h3><p>${esc(b.currency)} ${esc(Number(b.amount).toLocaleString())} · ${esc(b.transit_days)} days</p></div><a class="button secondary" href="#rfq/${esc(b.rfq_id)}">View quotation →</a></article>`).join('') || '<p class="empty">No quotations submitted yet. Browse the marketplace to find cargo requests.</p>'}<a href="#market" class="button secondary">Browse marketplace →</a></section>` : ''}</div>`;
+  const admins = mine ? check(await db.from('platform_admins').select('user_id').eq('user_id', user.id)) || [] : [];
+  const unread = mine ? await db.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null) : null;
+  if (unread?.error) throw unread.error;
+  return `<div class="container"><div class="section-head"><div><p class="eyebrow">${mine ? 'Your freight workspace' : 'Find your next opportunity'}</p><h1>${mine ? 'Dashboard' : 'RFQ Marketplace'}</h1><p class="muted">${mine ? 'Track your requests, quotations and awarded freight.' : 'Open cargo requests. Connect your expertise with the right shipment.'}</p></div><a href="#home" class="button">New freight request ↗</a></div>${mine ? `<div class="actions workspace-actions"><a href="#notifications" class="button secondary">Notifications (${unread?.count || 0})</a>${company && company.role !== 'shipper' ? '<a href="#verify" class="button secondary">Provider verification</a>' : ''}${admins.length ? '<a href="#admin" class="button secondary">Admin review</a>' : ''}</div>${!company ? '<div class="banner">Complete your business profile. <a href="#account"><u>Register your company →</u></a></div>' : `<div class="banner">${companySelector()}${esc(company.name)} · ${esc(roles[company.role])} · ${esc(company.verification_status)} <a href="#account"><u>Manage account</u></a></div>`}<div class="stats"><div class="stat"><b>${rows.length}</b><span>Recent requests</span></div><div class="stat"><b>${rows.filter(r => r.status === 'open').length}</b><span>Open requests</span></div><div class="stat"><b>${bids.length}</b><span>Recent quotations</span></div></div>` : ''}<section class="panel"><h2>${mine ? 'My cargo requests' : 'Open requests'}</h2>${rows.map(rfqRow).join('') || '<div class="empty">No requests here yet. Start with a new freight request.</div>'}<p class="muted">Showing up to 100 most recent requests.</p></section>${mine ? `<section class="panel"><h2>My submitted quotations</h2>${bids.map(b => `<article class="record"><div><span class="badge">${esc(b.status)}</span><h3>${esc(b.rfqs ? summary(b.rfqs) : 'Freight request')}</h3><p>${esc(b.currency)} ${esc(Number(b.amount).toLocaleString())} · ${esc(b.transit_days)} days</p></div><a class="button secondary" href="#rfq/${esc(b.rfq_id)}">View quotation →</a></article>`).join('') || '<p class="empty">No quotations submitted yet. Browse the marketplace to find cargo requests.</p>'}<a href="#market" class="button secondary">Browse marketplace →</a></section>` : ''}</div>`;
 }
 function bidEligibility(r, bids) {
   if (r.owner_id === user.id) return '';
@@ -108,7 +112,8 @@ async function detail(id) {
   const bids = check(await db.from('bids').select('*,companies(name)').eq('rfq_id', id).order('created_at', { ascending: false })) || [];
   const owner = r.owner_id === user.id;
   const eligibility = bidEligibility(r, bids);
-  return `<div class="container"><a href="#${owner ? 'dashboard' : 'market'}" class="muted">← Back to ${owner ? 'dashboard' : 'marketplace'}</a><section class="panel"><p class="eyebrow">${esc(r.service)}</p><h1>${esc(summary(r))}</h1><span class="badge">${esc(r.status)}</span><dl class="details">${Object.entries(r.details || {}).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>${r.notes ? `<h3>Additional requirements</h3><p class="text">${esc(r.notes)}</p>` : ''}</section><section class="panel"><h2>${owner ? 'Received quotations' : 'Your quotations'}</h2>${bids.map(b => `<article class="record"><div><span class="badge">${esc(b.status)}</span><h3>${esc(b.companies?.name || 'Freight provider')}</h3><p>${esc(b.currency)} ${esc(Number(b.amount).toLocaleString())} · ${esc(b.transit_days)} days</p><p class="text muted">${esc(b.notes)}</p></div>${owner && r.status === 'open' && b.status === 'submitted' ? `<button data-award="${esc(b.id)}" data-rfqid="${esc(id)}">Award quotation</button>` : ''}</article>`).join('') || '<p class="empty">No quotations yet.</p>'}${!owner ? '<p class="muted">You can see your own quotations. Other providers’ offers are private.</p>' : ''}</section>${!owner ? eligibility ? `<div class="banner">${esc(eligibility)} <a href="#account"><u>Manage account →</u></a></div>` : `<section class="panel"><h2>Submit your quotation</h2><p class="muted">Quoting as ${esc(company.name)}. One quotation per company per request.</p><form id="bid-form" data-rfqid="${esc(id)}"><div class="grid"><label>Currency<select name="currency">${['USD', 'TZS', 'KES', 'NGN', 'UGX', 'RWF'].map(c => `<option>${c}</option>`).join('')}</select></label><label>Total amount<input name="amount" type="number" min="0.01" step="0.01" required></label><label>Transit / lead time (days)<input name="days" type="number" min="1" step="1" required></label></div><label class="notes-label">Quotation notes (optional)<textarea name="bidNotes" maxlength="5000"></textarea></label><div class="form-bottom"><p class="muted">Include any exclusions or special conditions in your notes.</p><button type="submit">Submit quotation →</button></div></form></section>` : ''}</div>`;
+  const conversation = await messages(db, user, r, bids);
+  return `<div class="container"><a href="#${owner ? 'dashboard' : 'market'}" class="muted">← Back to ${owner ? 'dashboard' : 'marketplace'}</a><section class="panel"><p class="eyebrow">${esc(r.service)}</p><h1>${esc(summary(r))}</h1><span class="badge">${esc(r.status)}</span>${owner && r.status !== 'awarded' ? `<div class="actions"><button data-status="${r.status === 'open' ? 'closed' : 'open'}" data-rfqid="${esc(id)}" class="secondary">${r.status === 'open' ? 'Close request' : 'Reopen request'}</button></div>` : ''}<dl class="details">${Object.entries(r.details || {}).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>${r.notes ? `<h3>Additional requirements</h3><p class="text">${esc(r.notes)}</p>` : ''}</section><section class="panel"><h2>${owner ? 'Received quotations' : 'Your quotations'}</h2>${bids.map(b => `<article class="record"><div><span class="badge">${esc(b.status)}</span><h3>${esc(b.companies?.name || 'Freight provider')}</h3><p>${esc(b.currency)} ${esc(Number(b.amount).toLocaleString())} · ${esc(b.transit_days)} days</p><p class="text muted">${esc(b.notes)}</p></div>${owner && r.status === 'open' && b.status === 'submitted' ? `<button data-award="${esc(b.id)}" data-rfqid="${esc(id)}">Award quotation</button>` : ''}</article>`).join('') || '<p class="empty">No quotations yet.</p>'}${!owner ? '<p class="muted">You can see your own quotations. Other providers’ offers are private.</p>' : ''}</section>${!owner ? eligibility ? `<div class="banner">${esc(eligibility)} <a href="#account"><u>Manage account →</u></a></div>` : `<section class="panel"><h2>Submit your quotation</h2><p class="muted">Quoting as ${esc(company.name)}. One quotation per company per request.</p><form id="bid-form" data-rfqid="${esc(id)}"><div class="grid"><label>Currency<select name="currency">${['USD', 'TZS', 'KES', 'NGN', 'UGX', 'RWF'].map(c => `<option>${c}</option>`).join('')}</select></label><label>Total amount<input name="amount" type="number" min="0.01" step="0.01" required></label><label>Transit / lead time (days)<input name="days" type="number" min="1" step="1" required></label></div><label class="notes-label">Quotation notes (optional)<textarea name="bidNotes" maxlength="5000"></textarea></label><div class="form-bottom"><p class="muted">Include any exclusions or special conditions in your notes.</p><button type="submit">Submit quotation →</button></div></form></section>` : ''}${conversation}</div>`;
 }
 async function refresh() {
   const version = ++authVersion;
@@ -131,14 +136,14 @@ async function refresh() {
 async function show() {
   const version = ++routeVersion;
   const [page, id] = location.hash.slice(1).split('/');
-  currentPage = ['home', 'account', 'market', 'dashboard', 'rfq'].includes(page) ? page : 'home';
+  currentPage = ['home', 'account', 'market', 'dashboard', 'rfq', 'verify', 'admin', 'notifications'].includes(page) ? page : 'home';
   currentId = id || '';
   if (!ready && currentPage !== 'home') { root.innerHTML = '<div class="loading">Connecting to your freight workspace…</div>'; return; }
-  if (!user && ['market', 'dashboard', 'rfq'].includes(currentPage)) returnRoute = location.hash;
+  if (!user && ['market', 'dashboard', 'rfq', 'verify', 'admin', 'notifications'].includes(currentPage)) returnRoute = location.hash;
   root.setAttribute('aria-busy', 'true');
   if (currentPage !== 'home') root.innerHTML = '<div class="loading">Loading your freight workspace…</div>';
   try {
-    const html = currentPage === 'home' ? home() : currentPage === 'account' ? account() : currentPage === 'rfq' ? await detail(currentId) : await listing(currentPage === 'dashboard');
+    const html = currentPage === 'home' ? home() : currentPage === 'account' || (!user && currentPage !== 'home') ? account() : currentPage === 'verify' ? await verification(db, user, company) : currentPage === 'admin' ? await admin(db, user) : currentPage === 'notifications' ? await notifications(db, user) : currentPage === 'rfq' ? await detail(currentId) : await listing(currentPage === 'dashboard');
     if (version !== routeVersion) return;
     root.innerHTML = html;
     extra();
@@ -181,6 +186,10 @@ async function run(control, task) {
 document.addEventListener('input', e => { if (e.target.closest('#quote-form')) capture(); });
 document.addEventListener('change', async e => {
   if (e.target.matches('[data-field="Service type"]')) { capture(); extra(); capture(); }
+  if (e.target.id === 'message-recipient') {
+    document.querySelectorAll('[data-peer]').forEach(m => { m.hidden = m.dataset.peer !== e.target.value; });
+    document.getElementById('no-messages').hidden = [...document.querySelectorAll('[data-peer]')].some(m => !m.hidden);
+  }
   if (e.target.id === 'active-company') { company = companies.find(c => c.id === e.target.value); await show(); }
 });
 document.addEventListener('keydown', e => {
@@ -198,11 +207,23 @@ document.addEventListener('click', async e => {
   if (!b || (b.form && b.type === 'submit')) return;
   if (b.dataset.service) { capture(); service = b.dataset.service; persist(); await show(); document.querySelector('[data-service].active')?.focus({ preventScroll: true }); return; }
   if (b.id === 'focus') { document.getElementById('notes')?.focus(); return; }
-  if (b.id === 'retry') return show();
+  if (b.id === 'retry' || b.id === 'refresh-inbox') return show();
   if (b.id === 'auth-toggle') { authMode = authMode === 'signin' ? 'signup' : 'signin'; return show(); }
   await run(b, async () => {
     if (b.id === 'logout') { check(await db.auth.signOut()); user = null; companies = []; company = null; quote = {}; pending = false; persist(); await refresh(); return go('#home'); }
     if (b.id === 'publish-individual') return publish();
+    if (b.id === 'read-all') {
+      check(await db.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', user.id).is('read_at', null)); return show();
+    }
+    if (b.dataset.review) {
+      if (!window.confirm('Apply this provider verification decision?')) return;
+      check(await db.rpc('review_provider', { p_company_id: b.dataset.review, p_status: b.dataset.decision }));
+      notice('Provider review saved.', 'success'); return show();
+    }
+    if (b.dataset.status) {
+      check(await db.rpc('manage_rfq_status', { p_rfq_id: b.dataset.rfqid, p_status: b.dataset.status }));
+      notice('Request status updated.', 'success'); return show();
+    }
     if (b.dataset.award) {
       if (!window.confirm('Award this quotation? This selects the provider and closes the request to new bids.')) return;
       check(await db.rpc('award_bid', { p_rfq_id: b.dataset.rfqid, p_bid_id: b.dataset.award }));
@@ -212,7 +233,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('submit', async e => {
   const form = e.target;
-  if (!['quote-form', 'auth-form', 'company-form', 'bid-form'].includes(form.id)) return;
+  if (!['quote-form', 'auth-form', 'company-form', 'bid-form', 'verification-form', 'message-form'].includes(form.id)) return;
   e.preventDefault();
   await run(form.querySelector('button[type="submit"],button:not([type])'), async () => {
     if (!ready) throw new Error('We are still connecting. Please try again in a moment.');
@@ -234,6 +255,16 @@ document.addEventListener('submit', async e => {
       await refresh();
       if (pending) return publish();
       notice('Company registered successfully.', 'success'); return show();
+    }
+    if (form.id === 'verification-form') {
+      check(await db.from('verification_requests').upsert({ company_id: company.id, submitted_by: user.id, registration_number: form.elements.registration.value.trim(), contact_email: form.elements.contactEmail.value.trim(), contact_phone: form.elements.contactPhone.value.trim(), document_links: form.elements.documentLinks.value.trim(), details: form.elements.verificationNotes.value.trim() }, { onConflict: 'company_id' }));
+      notice('Verification request submitted for review.', 'success'); return show();
+    }
+    if (form.id === 'message-form') {
+      const body = form.elements.messageBody.value.trim();
+      if (!body) throw new Error('Write a message before sending.');
+      check(await db.from('messages').insert({ rfq_id: form.dataset.rfqid, sender_id: user.id, recipient_id: form.elements.recipient.value, body }));
+      notice('Message sent.', 'success'); return show();
     }
     if (form.id === 'bid-form') {
       const amount = Number(form.elements.amount.value), days = Number(form.elements.days.value);

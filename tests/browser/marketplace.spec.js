@@ -11,6 +11,10 @@ async function backend(page, options = {}) {
   const rfq = { ...initialRFQ, ...options.rfq };
   let bids = options.bids || [];
   const writes = [];
+  let verification = options.verification || null;
+  let notifications = [{ id: 'notification-1', user_id: uid, title: 'New quotation', body: 'A provider submitted a quotation.', rfq_id: rfqId, read_at: null, created_at: '2026-10-20T00:00:00Z' }];
+  let messages = options.messages || [];
+  page.on('pageerror', error => { throw error; });
   const session = () => ({ access_token: 'test-access-token', refresh_token: 'test-refresh-token', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now()/1000)+3600, user: { id: loggedIn === 'provider' ? provider : uid, email: 'test@example.com', aud: 'authenticated', role: 'authenticated', user_metadata: {}, app_metadata: {} } });
   await page.addInitScript(({ loggedIn, session }) => { if (loggedIn) localStorage.setItem('sb-iacahumfwacpknggqjtd-auth-token', JSON.stringify(session)); }, { loggedIn, session: session() });
   await page.route('https://fonts.googleapis.com/**', r => r.abort());
@@ -26,19 +30,35 @@ async function backend(page, options = {}) {
       if (path.endsWith('/token') || path.endsWith('/signup')) { loggedIn = true; return respond(session()); }
       return respond(session().user);
     }
-    if (req.method === 'POST') writes.push({ path, body });
+    if (req.method() === 'POST') writes.push({ path, body });
     if (path.endsWith('/rpc/register_company')) { company = { id: companyId, owner_id: uid, name: body.p_name, role: body.p_role, verification_status: 'pending' }; return respond(companyId); }
     if (path.endsWith('/rpc/award_bid')) { rfq.status = 'awarded'; bids = bids.map(b => ({ ...b, status: 'awarded' })); return respond(null); }
     if (path.endsWith('/rpc/manage_rfq_status')) { rfq.status = body.p_status; return respond(null); }
+    if (path.endsWith('/platform_admins')) return respond(options.admin ? [{ user_id: uid }] : []);
+    if (path.endsWith('/verification_requests')) {
+      if (req.method() === 'POST') verification = body;
+      if (url.searchParams.has('company_id')) return respond(verification);
+      return respond(verification ? [{ ...verification, companies: company }] : []);
+    }
+    if (path.endsWith('/notifications')) {
+      if (req.method() === 'PATCH') notifications = notifications.map(n => ({ ...n, read_at: body.read_at }));
+      if (req.method() === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': '0-0/' + notifications.filter(n => !n.read_at).length }, body: '' });
+      return respond(notifications);
+    }
+    if (path.endsWith('/messages')) {
+      if (req.method() === 'POST') messages.push({ id: 'message-1', ...body });
+      return respond([...messages].reverse());
+    }
+    if (path.endsWith('/rpc/review_provider')) { company.verification_status = body.p_status; return respond(null); }
     if (path.endsWith('/company_members')) return respond(company ? [{ company_id: companyId }] : []);
     if (path.endsWith('/companies')) return respond(company ? [company] : []);
     if (path.endsWith('/rfqs')) {
-      if (req.method === 'POST') Object.assign(rfq, body);
+      if (req.method() === 'POST') Object.assign(rfq, body);
       if (options.failRFQ) return respond({ message: 'Request service unavailable' }, 503);
       return respond(req.headers().accept?.includes('vnd.pgrst.object') ? rfq : [rfq]);
     }
     if (path.endsWith('/bids')) {
-      if (req.method === 'POST') { if (options.failBid) return respond({ code: '42501', message: 'denied by policy' }, 403); bids.push({ ...body, id: bidId, status: 'submitted', companies: { name: 'Test Freight Co' }, rfqs: rfq }); }
+      if (req.method() === 'POST') { if (options.failBid) return respond({ code: '42501', message: 'denied by policy' }, 403); bids.push({ ...body, id: bidId, status: 'submitted', companies: { name: 'Test Freight Co' }, rfqs: rfq }); }
       return respond(bids);
     }
     return respond({ message: 'Unexpected endpoint ' + path }, 400);
@@ -166,4 +186,50 @@ test('data failures offer a working retry', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'We couldn’t load this page.' })).toBeVisible();
   await page.getByRole('button', { name: 'Try again' }).click();
   await expect(page.getByText('Request service unavailable')).toBeVisible();
+});
+test('owner can close and reopen an inquiry', async ({ page }) => {
+  const { writes } = await backend(page, { loggedIn: true, company: {} }); await page.goto('/#rfq/' + rfqId);
+  await page.getByRole('button', { name: 'Close request' }).click();
+  await expect(page.getByRole('button', { name: 'Reopen request' })).toBeVisible();
+  await page.getByRole('button', { name: 'Reopen request' }).click();
+  await expect(page.getByRole('button', { name: 'Close request' })).toBeVisible();
+  expect(writes.filter(w => w.path.endsWith('/rpc/manage_rfq_status')).map(w => w.body.p_status)).toEqual(['closed','open']);
+});
+test('provider verification submits and reviewed applications stay read only', async ({ page }) => {
+  const { writes } = await backend(page, { loggedIn: 'provider', company: { verification_status: 'pending' } }); await page.goto('/#verify');
+  await page.getByLabel('Business registration number').fill('REG-100'); await page.getByLabel('Contact phone').fill('+255700000000');
+  await page.getByRole('button', { name: 'Submit for review' }).click();
+  await expect(page.getByRole('status')).toContainText('submitted for review');
+  expect(writes.find(w => w.path.endsWith('/verification_requests')).body.registration_number).toBe('REG-100');
+});
+test('notifications mark read and open related RFQ', async ({ page }) => {
+  await backend(page, { loggedIn: true, company: {} }); await page.goto('/#dashboard');
+  await page.getByRole('link', { name: 'Notifications (1)' }).click();
+  await expect(page.getByRole('heading', { name: 'New quotation' })).toBeVisible();
+  await page.getByRole('button', { name: 'Mark all read' }).click();
+  await expect(page.getByRole('button', { name: 'Mark all read' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Refresh inbox' }).click();
+  await page.getByRole('link', { name: 'View request' }).click();
+  await expect(page.getByRole('heading', { name: 'Received quotations' })).toBeVisible();
+});
+test('admin verification review retains server authorization', async ({ page }) => {
+  const { writes } = await backend(page, { loggedIn: true, company: {}, admin: true, verification: { company_id: companyId, registration_number: 'REG-1' } });
+  await page.goto('/#dashboard'); await page.getByRole('link', { name: 'Admin review' }).click();
+  page.on('dialog', d => d.accept()); await page.getByRole('button', { name: 'Verify provider' }).click();
+  await expect(page.getByRole('status')).toContainText('review saved');
+  expect(writes.find(w => w.path.endsWith('/rpc/review_provider')).body.p_status).toBe('verified');
+});
+test('messages stay in the selected conversation and send to its recipient', async ({ page }) => {
+  const otherProvider = '66666666-6666-4666-8666-666666666666';
+  const { writes } = await backend(page, { loggedIn: true, company: {}, bids: [
+    { id: bidId, company_id: 'other', provider_id: provider, status: 'submitted', currency: 'USD', amount: 500, transit_days: 8, companies: { name: 'Provider One' } },
+    { id: 'second', company_id: 'second', provider_id: otherProvider, status: 'submitted', currency: 'USD', amount: 700, transit_days: 7, companies: { name: 'Provider Two' } }
+  ], messages: [{ sender_id: provider, recipient_id: uid, body: 'First conversation' }, { sender_id: otherProvider, recipient_id: uid, body: 'Second conversation' }] });
+  await page.goto('/#rfq/' + rfqId);
+  await expect(page.getByText('First conversation')).toBeVisible(); await expect(page.getByText('Second conversation')).toBeHidden();
+  await page.getByLabel('Conversation with').selectOption(otherProvider);
+  await expect(page.getByText('First conversation')).toBeHidden(); await expect(page.getByText('Second conversation')).toBeVisible();
+  await page.getByLabel('Write a message').fill('Please confirm collection.'); await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByRole('status')).toContainText('Message sent');
+  expect(writes.find(w => w.path.endsWith('/messages')).body.recipient_id).toBe(otherProvider);
 });
