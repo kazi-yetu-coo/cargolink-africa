@@ -1,0 +1,19 @@
+{
+  "name": "cargolink-africa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs dist",
+    "test": "node --test tests/database.test.mjs && playwright test"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.95.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
+    "@playwright/test": "1.58.2",
+    "esbuild": "0.28.2"
+  }
+}
