@@ -1,0 +1,97 @@
+export type Role = "customer" | "provider" | "admin";
+export type Company = {
+  id: string;
+  owner_id: string;
+  name: string;
+  role: "shipper" | "agent" | "trucker";
+  verification_status: string;
+  suspended?: boolean;
+  country?: string;
+  city?: string;
+  services?: string[];
+};
+export type FreightLocation = {
+  name: string;
+  country: string;
+  type: "Port" | "Airport" | "City" | "Inland terminal";
+  code: string;
+};
+export type ShipmentDetails = {
+  origin?: FreightLocation;
+  destination?: FreightLocation;
+  cargo?: string;
+  cargoType?: string;
+  weight?: number;
+  volume?: number;
+  containers?: string;
+  quantity?: number;
+  scope?: string;
+  date?: string;
+  deliveryDate?: string;
+  services?: string[];
+  requirements?: string;
+  [key: string]: unknown;
+};
+export type RFQ = {
+  id: string;
+  owner_id: string;
+  company_id: string | null;
+  service: string;
+  details: ShipmentDetails;
+  notes: string;
+  status: string;
+  awarded_bid_id?: string;
+  created_at: string;
+  progress?: string;
+};
+export type Bid = {
+  id: string;
+  rfq_id: string;
+  provider_id: string;
+  company_id: string;
+  currency: string;
+  amount: number;
+  transit_days: number;
+  notes: string;
+  status: string;
+  created_at: string;
+  freight_charges?: number;
+  customs_fees?: number;
+  inland_charges?: number;
+  other_charges?: number;
+  valid_until?: string;
+  scope?: string;
+  inclusions?: string[];
+  exclusions?: string;
+  terms?: string;
+  companies?: { name: string; verification_status: string };
+};
+export type Message = {
+  id: string;
+  rfq_id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  created_at: string;
+};
+export type Notification = {
+  id: string;
+  user_id: string;
+  rfq_id: string | null;
+  title: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+};
+export type Verification = {
+  company_id: string;
+  submitted_by: string;
+  registration_number: string;
+  contact_email: string;
+  contact_phone: string;
+  document_links: string;
+  details: string;
+  submitted_at: string;
+  reviewed_at: string | null;
+  companies?: Company;
+};

@@ -1,0 +1,118 @@
+import type { Bid, Company, RFQ } from "./types";
+import { locations } from "./locations";
+const now = new Date().toISOString();
+export const demoCompanies: Company[] = [
+  {
+    id: "demo-transglobal",
+    owner_id: "demo-provider",
+    name: "TransGlobal Logistics",
+    role: "agent",
+    verification_status: "verified",
+    country: "Kenya",
+    city: "Nairobi",
+    services: ["Ocean Freight", "Trucking", "Customs Clearance"],
+  },
+  {
+    id: "demo-afrilink",
+    owner_id: "demo-provider-2",
+    name: "AfriLink Shipping",
+    role: "agent",
+    verification_status: "verified",
+    country: "Tanzania",
+    city: "Dar es Salaam",
+    services: ["Ocean Freight", "Air Freight"],
+  },
+];
+export const demoRFQs: RFQ[] = [
+  {
+    id: "demo-1001",
+    owner_id: "demo-customer",
+    company_id: "demo-owner",
+    service: "Ocean Freight",
+    details: {
+      origin: locations[2],
+      destination: locations.find(
+        (l) => l.name === "Nairobi" && l.type === "City",
+      ),
+      cargo: "Consumer goods",
+      cargoType: "Containers",
+      weight: 20000,
+      volume: 67,
+      containers: "40ft high cube",
+      quantity: 1,
+      scope: "Door to door",
+      date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      services: ["Customs clearance", "Inland trucking"],
+    },
+    notes: "Handle with care. Insurance required.",
+    status: "open",
+    created_at: now,
+  },
+  {
+    id: "demo-1002",
+    owner_id: "demo-customer",
+    company_id: "demo-owner",
+    service: "Trucking",
+    details: {
+      origin: locations[1],
+      destination: locations.find((l) => l.name === "Kampala"),
+      cargo: "Machinery",
+      weight: 18000,
+      scope: "Door to door",
+    },
+    notes: "",
+    status: "awarded",
+    progress: "In transit",
+    created_at: now,
+  },
+];
+export const demoBids: Bid[] = [
+  {
+    id: "demo-bid-1",
+    rfq_id: "demo-1001",
+    provider_id: "demo-provider",
+    company_id: "demo-transglobal",
+    currency: "USD",
+    amount: 3450,
+    transit_days: 20,
+    notes: "Dedicated shipment coordinator.",
+    status: "submitted",
+    created_at: now,
+    freight_charges: 2500,
+    customs_fees: 350,
+    inland_charges: 500,
+    other_charges: 100,
+    scope: "Door to door",
+    valid_until: new Date(Date.now() + 30 * 86400000)
+      .toISOString()
+      .slice(0, 10),
+    inclusions: ["Ocean freight", "Customs clearance", "Inland trucking"],
+    exclusions: "Import duties and taxes",
+    terms: "50% deposit, balance before delivery.",
+    companies: demoCompanies[0],
+  },
+  {
+    id: "demo-bid-2",
+    rfq_id: "demo-1001",
+    provider_id: "demo-provider-2",
+    company_id: "demo-afrilink",
+    currency: "USD",
+    amount: 3800,
+    transit_days: 22,
+    notes: "Sailings subject to carrier availability.",
+    status: "submitted",
+    created_at: now,
+    freight_charges: 3200,
+    customs_fees: 400,
+    inland_charges: 0,
+    other_charges: 200,
+    scope: "Port to port",
+    valid_until: new Date(Date.now() + 15 * 86400000)
+      .toISOString()
+      .slice(0, 10),
+    inclusions: ["Ocean freight", "Documentation"],
+    exclusions: "Inland trucking, duties and taxes",
+    terms: "Payment in full before vessel departure.",
+    companies: demoCompanies[1],
+  },
+];
