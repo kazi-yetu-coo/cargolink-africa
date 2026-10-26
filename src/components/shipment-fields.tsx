@@ -10,11 +10,13 @@ export function RouteFields({
   details,
   onChange,
   errors = {},
+  compact = false,
 }: {
   service: string;
   details: ShipmentDetails;
   onChange: ShipmentChange;
   errors?: Record<string, string>;
+  compact?: boolean;
 }) {
   const scope = details.scope || defaultScope(service);
   const types: FreightLocation["type"][] | undefined =
@@ -27,9 +29,19 @@ export function RouteFields({
     air = service === "Air Freight",
     road = service === "Trucking",
     storage = service === "Warehousing";
+  const scopeField = (
+    <Select
+      label="Service scope"
+      value={scope}
+      onChange={(v) => onChange("scope", v)}
+      options={scopeOptions(service)}
+    />
+  );
   return (
     <>
-      <div className="two-columns route-fields">
+      <div
+        className={`two-columns route-fields ${compact ? "compact" : ""} ${storage ? "storage" : ""}`}
+      >
         <LocationInput
           key={`${service}-origin`}
           label={
@@ -89,31 +101,35 @@ export function RouteFields({
             }
           />
         )}
+        {compact && scopeField}
       </div>
-      <Select
-        label="Service scope"
-        value={scope}
-        onChange={(v) => onChange("scope", v)}
-        options={scopeOptions(service)}
-      />
+      {!compact && scopeField}
       {!storage && (scope.startsWith("Door") || scope.endsWith("door")) && (
-        <section className="door-addresses">
-          <div>
-            <strong>
-              {scope === "Door to door"
-                ? "Door-to-door locations"
-                : "Door service location"}
-            </strong>
-            <p>
-              Give the exact collection or delivery address, including the
-              business name, street and city.
-            </p>
-          </div>
+        <section
+          className={`door-addresses ${compact ? "compact" : ""} ${scope.startsWith("Door") ? "" : "delivery-only"}`}
+        >
+          {!compact && (
+            <div>
+              <strong>
+                {scope === "Door to door"
+                  ? "Door-to-door locations"
+                  : "Door service location"}
+              </strong>
+              <p>
+                Give the exact collection or delivery address, including the
+                business name, street and city.
+              </p>
+            </div>
+          )}
           <div className="two-columns">
             {scope.startsWith("Door") && (
               <Field
                 label="Pickup address *"
-                placeholder="Business / warehouse, street, city, country"
+                placeholder={
+                  compact
+                    ? "Street, business, city"
+                    : "Business / warehouse, street, city, country"
+                }
                 value={details.pickupAddress || ""}
                 onChange={(e) => onChange("pickupAddress", e.target.value)}
                 maxLength={500}
@@ -123,7 +139,11 @@ export function RouteFields({
             {scope.endsWith("door") && (
               <Field
                 label="Delivery address *"
-                placeholder="Business / warehouse, street, city, country"
+                placeholder={
+                  compact
+                    ? "Street, business, city"
+                    : "Business / warehouse, street, city, country"
+                }
                 value={details.deliveryAddress || ""}
                 onChange={(e) => onChange("deliveryAddress", e.target.value)}
                 maxLength={500}

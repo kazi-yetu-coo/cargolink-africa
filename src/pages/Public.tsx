@@ -139,6 +139,7 @@ export function Home() {
             noValidate
           >
             <RouteFields
+              compact
               service={mode}
               details={details}
               onChange={update}

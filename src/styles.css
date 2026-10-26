@@ -4093,3 +4093,110 @@ tbody tr:hover td {
     gap: 0;
   }
 }
+
+/* Compact homepage inquiry; the full RFQ editor keeps its roomier fields. */
+.quick-form {
+  padding: 18px 26px 0;
+}
+.quick-form .route-fields.compact {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(155px, 0.75fr);
+  gap: 14px;
+}
+.quick-form .route-fields.compact.storage {
+  grid-template-columns: minmax(0, 2fr) minmax(155px, 1fr);
+}
+.quick-form .field {
+  margin-bottom: 12px;
+}
+.quick-form .field label {
+  margin-bottom: 5px;
+}
+.quick-form input:not([type="checkbox"]):not([type="file"]),
+.quick-form select {
+  min-height: 36px;
+  height: 36px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.quick-form .input-icon > svg:first-child {
+  top: 10px;
+}
+.quick-form .input-icon .selected-check {
+  top: 11px;
+}
+.quick-form .select-wrap svg {
+  top: 10px;
+}
+.quick-form .location-options {
+  top: 59px;
+}
+.quick-form .door-addresses.compact {
+  margin: 0 0 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.quick-form .door-addresses.compact .two-columns {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(155px, 0.75fr);
+  gap: 14px;
+}
+.quick-form .door-addresses.compact.delivery-only .field {
+  grid-column: 2;
+}
+.quick-form .door-addresses.compact input {
+  background: #f7fbf9;
+  border-color: #d8e8e1;
+}
+.quick-form .quick-cargo-fields {
+  gap: 14px;
+}
+.quick-form .quick-cargo-fields .two-columns {
+  gap: 14px;
+}
+.quick-form .quick-action {
+  margin: 0 0 10px;
+}
+.quick-inquiry .quick-bottom {
+  padding-top: 8px;
+  padding-bottom: 13px;
+}
+.quick-inquiry .popular-routes {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+@media (max-width: 600px) {
+  .quick-form {
+    padding: 16px 18px 0;
+  }
+  .quick-form .route-fields.compact,
+  .quick-form .route-fields.compact.storage,
+  .quick-form .door-addresses.compact .two-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .quick-form .door-addresses.compact.delivery-only .field {
+    grid-column: auto;
+  }
+  .quick-form .quick-cargo-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .quick-form .quick-cargo-fields .two-columns {
+    gap: 0;
+  }
+  .quick-form input:not([type="checkbox"]):not([type="file"]),
+  .quick-form select {
+    min-height: 40px;
+    height: 40px;
+  }
+  .quick-form .input-icon > svg:first-child,
+  .quick-form .select-wrap svg {
+    top: 12px;
+  }
+  .quick-form .input-icon .selected-check {
+    top: 13px;
+  }
+  .quick-form .location-options {
+    top: 63px;
+  }
+}
