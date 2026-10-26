@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   FileText,
   Globe2,
-  PackageCheck,
   Plane,
   Save,
   Ship,
@@ -20,7 +19,6 @@ import {
   Button,
   Field,
   Loading,
-  LocationInput,
   PageTitle,
   Panel,
   Select,
@@ -29,15 +27,25 @@ import {
 } from "../components/ui";
 import { useAuth } from "../lib/auth";
 import { checked, supabase } from "../lib/supabase";
-import { modes, validateShipment } from "../lib/domain";
+import {
+  modes,
+  validateShipment,
+  normalizeTransportDetails,
+  defaultScope,
+  shipmentSteps,
+  switchTransport,
+} from "../lib/domain";
 import { locationLabel } from "../lib/locations";
 import type { RFQ, ShipmentDetails } from "../lib/types";
+import { RouteFields, TransportFields } from "../components/shipment-fields";
 function stored() {
   try {
     return JSON.parse(sessionStorage.getItem("cargolink-inquiry") || "{}") as {
       service?: string;
       details?: ShipmentDetails;
       notes?: string;
+      entryStepCompleted?: boolean;
+      resumeStep?: number;
     };
   } catch {
     return {};
@@ -49,15 +57,30 @@ export function RFQEditor() {
     navigate = useNavigate();
   const [initial] = useState(stored);
   const [service, setService] = useState(initial.service || "Ocean Freight"),
-    [details, setDetails] = useState<ShipmentDetails>({
-      cargoType: "General cargo",
-      scope: "Door to door",
-      quantity: 1,
-      services: [],
-      ...initial.details,
-    }),
+    [details, setDetails] = useState<ShipmentDetails>(
+      normalizeTransportDetails(
+        {
+          cargoType: "General cargo",
+          scope: defaultScope(initial.service || "Ocean Freight"),
+          quantity: 1,
+          services: [],
+          ...initial.details,
+        },
+        initial.service || "Ocean Freight",
+      ),
+    ),
     [notes, setNotes] = useState(initial.notes || ""),
-    [step, setStep] = useState(0),
+    [step, setStep] = useState(
+      id
+        ? 0
+        : Math.max(
+            0,
+            Math.min(
+              3,
+              initial.resumeStep ?? (initial.entryStepCompleted ? 1 : 0),
+            ),
+          ),
+    ),
     [errors, setErrors] = useState<Record<string, string>>({}),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -88,9 +111,15 @@ export function RFQEditor() {
     if (!id)
       sessionStorage.setItem(
         "cargolink-inquiry",
-        JSON.stringify({ service, details, notes }),
+        JSON.stringify({
+          service,
+          details,
+          notes,
+          entryStepCompleted: initial.entryStepCompleted,
+          resumeStep: step,
+        }),
       );
-  }, [service, details, notes, id]);
+  }, [service, details, notes, id, step, initial.entryStepCompleted]);
   function set<K extends keyof ShipmentDetails>(k: K, v: ShipmentDetails[K]) {
     setDetails((d) => ({ ...d, [k]: v }));
     setErrors((e) => ({ ...e, [k]: "" }));
@@ -99,9 +128,25 @@ export function RFQEditor() {
     const e = validateShipment(details, service);
     const relevant =
       step === 0
-        ? ["origin", "destination"]
+        ? [
+            "origin",
+            "destination",
+            "pickupAddress",
+            "deliveryAddress",
+            "containers",
+            "quantity",
+            "packageCount",
+            ...(service === "Air Freight" ? ["weight"] : []),
+          ]
         : step === 1
-          ? ["cargo", "weight", "volume", "date", "deliveryDate"]
+          ? [
+              "cargo",
+              "weight",
+              "volume",
+              "date",
+              "deliveryDate",
+              "packageCount",
+            ]
           : [];
     const filtered = Object.fromEntries(
       Object.entries(e).filter(([k]) => relevant.includes(k)),
@@ -117,14 +162,32 @@ export function RFQEditor() {
       const e = validateShipment(details, service);
       if (Object.keys(e).length) {
         setErrors(e);
-        setStep(e.origin || e.destination ? 0 : 1);
+        setStep(
+          [
+            "origin",
+            "destination",
+            "pickupAddress",
+            "deliveryAddress",
+            "containers",
+            "quantity",
+            ...(service === "Air Freight" ? ["packageCount"] : []),
+          ].some((k) => e[k])
+            ? 0
+            : 1,
+        );
         return;
       }
     }
     if (!user) {
       sessionStorage.setItem(
         "cargolink-inquiry",
-        JSON.stringify({ service, details, notes }),
+        JSON.stringify({
+          service,
+          details,
+          notes,
+          entryStepCompleted: initial.entryStepCompleted,
+          resumeStep: step,
+        }),
       );
       navigate("/auth/sign-in?next=%2Fcustomer%2Frfqs%2Fnew");
       return;
@@ -144,7 +207,7 @@ export function RFQEditor() {
         supabase.rpc("save_rfq", {
           p_id: id || null,
           p_service: service,
-          p_details: details,
+          p_details: normalizeTransportDetails(details, service),
           p_notes: notes,
           p_submit: submit,
         }),
@@ -186,18 +249,25 @@ export function RFQEditor() {
           </Link>
         }
       />
+      {!id && initial.entryStepCompleted && (
+        <Alert tone="success">
+          <strong>Great, you’ve completed the first step!</strong>
+          <br />
+          Your route and transport details are saved. Just three more steps:
+          cargo & schedule, services & handling, then review & submit.{" "}
+          <button
+            type="button"
+            className="text-link inline-action"
+            onClick={() => setStep(0)}
+          >
+            Edit your first step
+          </button>
+        </Alert>
+      )}
       {error && <Alert>{error}</Alert>}
       <Panel className="wizard-panel">
         <aside>
-          <Stepper
-            steps={[
-              "Route & service",
-              "Cargo & schedule",
-              "Additional services",
-              "Review & submit",
-            ]}
-            current={step}
-          />
+          <Stepper steps={shipmentSteps(service)} current={step} />
           <div className="wizard-hint">
             <ShieldIcon />
             <h4>A good quote starts with good details.</h4>
@@ -222,7 +292,6 @@ export function RFQEditor() {
                     Truck,
                     TrainFront,
                     Globe2,
-                    PackageCheck,
                     Warehouse,
                   ][i];
                   return (
@@ -230,7 +299,11 @@ export function RFQEditor() {
                       key={m}
                       type="button"
                       className={service === m ? "selected" : ""}
-                      onClick={() => setService(m)}
+                      onClick={() => {
+                        setService(m);
+                        setDetails((d) => switchTransport(d, m));
+                        setErrors({});
+                      }}
                     >
                       <Icon size={23} />
                       <span>{m === "Trucking" ? "Road freight" : m}</span>
@@ -238,48 +311,18 @@ export function RFQEditor() {
                   );
                 })}
               </div>
-              <div className="two-columns">
-                <LocationInput
-                  label={
-                    service === "Warehousing"
-                      ? "Storage location *"
-                      : "Origin *"
-                  }
-                  value={details.origin}
-                  onChange={(v) => set("origin", v)}
-                  error={errors.origin}
-                />
-                {service !== "Warehousing" && (
-                  <LocationInput
-                    label="Destination *"
-                    value={details.destination}
-                    onChange={(v) => set("destination", v)}
-                    error={errors.destination}
-                  />
-                )}
-              </div>
-              <Select
-                label="Service scope"
-                value={details.scope || "Door to door"}
-                onChange={(v) => set("scope", v)}
-                options={
-                  service === "Warehousing"
-                    ? ["Storage only", "Storage & handling"]
-                    : service === "Customs Clearance"
-                      ? [
-                          "Import clearance",
-                          "Export clearance",
-                          "Transit clearance",
-                        ]
-                      : [
-                          "Door to door",
-                          "Port to port",
-                          "Door to port",
-                          "Port to door",
-                          "Airport to airport",
-                          "Terminal to terminal",
-                        ]
-                }
+              <RouteFields
+                service={service}
+                details={details}
+                onChange={set}
+                errors={errors}
+              />
+              <TransportFields
+                service={service}
+                details={details}
+                onChange={set}
+                errors={errors}
+                quick
               />
             </>
           ) : step === 1 ? (
@@ -291,14 +334,18 @@ export function RFQEditor() {
                 label="Cargo type"
                 value={details.cargoType || "General cargo"}
                 onChange={(v) => set("cargoType", v)}
-                options={[
-                  "General cargo",
-                  "Containers",
-                  "Project cargo",
-                  "Perishables",
-                  "Hazardous",
-                  "Vehicles",
-                ]}
+                options={
+                  service === "Air Freight"
+                    ? ["General cargo", "Perishables", "Hazardous", "Vehicles"]
+                    : [
+                        "General cargo",
+                        "Containers",
+                        "Project cargo",
+                        "Perishables",
+                        "Hazardous",
+                        "Vehicles",
+                      ]
+                }
               />
               <TextArea
                 label="Cargo description *"
@@ -339,31 +386,29 @@ export function RFQEditor() {
                   error={errors.volume}
                 />
               </div>
-              <div className="two-columns">
-                <Select
-                  label="Equipment / container"
-                  value={details.containers || "Not required"}
-                  onChange={(v) => set("containers", v)}
-                  options={[
-                    "Not required",
-                    "20ft container",
-                    "40ft container",
-                    "40ft high cube",
-                    "Reefer",
-                    "LCL",
-                    "Flatbed",
-                    "Box truck",
-                  ]}
+              {service === "Trucking" && (
+                <TransportFields
+                  service={service}
+                  details={details}
+                  onChange={set}
+                  errors={errors}
                 />
-                <Field
-                  label="Packages / containers"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={details.quantity ?? 1}
-                  onChange={(e) => set("quantity", Number(e.target.value))}
-                />
-              </div>
+              )}
+              {(service === "Ocean Freight" || service === "Air Freight") && (
+                <p className="fine-print">
+                  {service === "Air Freight"
+                    ? `${details.packageCount || "Not specified"} boxes / packages`
+                    : `${details.quantity || "Not specified"} × ${details.containers || "equipment not selected"}`}{" "}
+                  ·{" "}
+                  <button
+                    type="button"
+                    className="text-link inline-action"
+                    onClick={() => setStep(0)}
+                  >
+                    Edit transport details
+                  </button>
+                </p>
+              )}
               <div className="two-columns">
                 <Field
                   label="Cargo ready date *"
@@ -454,8 +499,29 @@ export function RFQEditor() {
                   ["Cargo type", details.cargoType],
                   ["Gross weight", `${details.weight} kg`],
                   ["Volume", `${details.volume || "Not specified"} CBM`],
-                  ["Equipment", details.containers || "Not required"],
-                  ["Quantity", details.quantity || 1],
+                  ...(service === "Ocean Freight"
+                    ? [
+                        ["Sea equipment", details.containers],
+                        ["Containers", details.quantity],
+                      ]
+                    : []),
+                  ...(service === "Air Freight" || details.packageCount
+                    ? [["Boxes / packages", details.packageCount]]
+                    : []),
+                  ...(service === "Trucking"
+                    ? [
+                        [
+                          "Truck type",
+                          details.truckType || "Provider to recommend",
+                        ],
+                      ]
+                    : []),
+                  ...(details.scope?.startsWith("Door")
+                    ? [["Pickup address", details.pickupAddress]]
+                    : []),
+                  ...(details.scope?.endsWith("door")
+                    ? [["Delivery address", details.deliveryAddress]]
+                    : []),
                   ["Ready date", details.date],
                   ["Preferred delivery", details.deliveryDate || "Flexible"],
                   [

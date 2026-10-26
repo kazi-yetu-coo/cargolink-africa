@@ -39,6 +39,8 @@ import {
   money,
   routeName,
   shortId,
+  scopeOptions,
+  defaultScope,
 } from "../lib/domain";
 import { demoBids, demoRFQs } from "../lib/demo";
 import type { Bid, RFQ } from "../lib/types";
@@ -226,8 +228,24 @@ export function RFQDetail({
                     "Volume",
                     r.details.volume ? `${r.details.volume} CBM` : undefined,
                   ],
-                  ["Equipment", r.details.containers],
-                  ["Quantity", r.details.quantity],
+                  ...(r.service === "Ocean Freight"
+                    ? [
+                        ["Sea equipment", r.details.containers],
+                        ["Containers", r.details.quantity],
+                      ]
+                    : []),
+                  ...(r.service === "Air Freight" || r.details.packageCount
+                    ? [["Boxes / packages", r.details.packageCount]]
+                    : []),
+                  ...(r.details.truckType
+                    ? [["Truck type", r.details.truckType]]
+                    : []),
+                  ...(r.details.pickupAddress
+                    ? [["Pickup address", r.details.pickupAddress]]
+                    : []),
+                  ...(r.details.deliveryAddress
+                    ? [["Delivery address", r.details.deliveryAddress]]
+                    : []),
                   ["Service scope", r.details.scope],
                   ["Ready date", r.details.date],
                   ["Preferred delivery", r.details.deliveryDate],
@@ -664,7 +682,7 @@ export function SubmitBid() {
     navigate = useNavigate();
   const [step, setStep] = useState(0),
     [currency, setCurrency] = useState("USD"),
-    [scope, setScope] = useState("Door to door"),
+    [scopeChoice, setScope] = useState(""),
     [days, setDays] = useState(""),
     [valid, setValid] = useState(""),
     [costs, setCosts] = useState({
@@ -687,6 +705,7 @@ export function SubmitBid() {
     [id],
   );
   const { data: r, error: loadError, loading } = useLoad(loader);
+  const scope = scopeChoice || defaultScope(r?.service || "Ocean Freight");
   if (loading) return <Loading />;
   if (loadError || !r)
     return <Alert>{loadError || "Inquiry unavailable"}</Alert>;
@@ -805,17 +824,7 @@ export function SubmitBid() {
                 label="Delivery scope"
                 value={scope}
                 onChange={setScope}
-                options={[
-                  "Door to door",
-                  "Port to port",
-                  "Door to port",
-                  "Port to door",
-                  "Airport to airport",
-                  "Terminal to terminal",
-                  "Storage only",
-                  "Import clearance",
-                  "Export clearance",
-                ]}
+                options={scopeOptions(r.service)}
               />
               <div className="two-columns">
                 <Field

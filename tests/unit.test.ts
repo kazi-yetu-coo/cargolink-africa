@@ -3,6 +3,11 @@ import {
   comparisonWarnings,
   costTotal,
   validateShipment,
+  validateFirstStep,
+  normalizeTransportDetails,
+  switchTransport,
+  shipmentSteps,
+  modes,
 } from "../src/lib/domain";
 import { searchLocations, locations } from "../src/lib/locations";
 import { demoBids } from "../src/lib/demo";
@@ -21,6 +26,7 @@ describe("Structured locations and inquiries", () => {
     const e = validateShipment({}, "Ocean Freight");
     expect(Object.keys(e).sort()).toEqual([
       "cargo",
+      "containers",
       "date",
       "destination",
       "origin",
@@ -100,5 +106,112 @@ describe("Assistant dependency handling", () => {
     expect(res.status).toBe(503);
     expect((await res.json()).error).toContain("structured inquiry form");
     if (previous) process.env.OPENAI_API_KEY = previous;
+  });
+});
+
+describe("Transport-specific inquiry stages", () => {
+  const sea = {
+    origin: locations[0],
+    destination: locations[1],
+    scope: "Door to door",
+    containers: "40ft container",
+    quantity: 1,
+  };
+  it("requires both street addresses for door-to-door service", () => {
+    expect(validateFirstStep(sea, "Ocean Freight")).toMatchObject({
+      pickupAddress: expect.any(String),
+      deliveryAddress: expect.any(String),
+    });
+    expect(
+      validateFirstStep(
+        {
+          ...sea,
+          pickupAddress: "Factory, Shanghai, China",
+          deliveryAddress: "Warehouse, Nairobi, Kenya",
+        },
+        "Ocean Freight",
+      ),
+    ).toEqual({});
+  });
+  it("does not require door addresses for port-to-port service", () => {
+    expect(
+      validateFirstStep({ ...sea, scope: "Port to port" }, "Ocean Freight"),
+    ).toEqual({});
+  });
+  it("requires sea equipment and a valid container count", () => {
+    expect(
+      validateFirstStep(
+        { ...sea, scope: "Port to port", containers: "" },
+        "Ocean Freight",
+      ).containers,
+    ).toBeTruthy();
+    expect(
+      validateFirstStep(
+        { ...sea, scope: "Port to port", quantity: 1.5 },
+        "Ocean Freight",
+      ).quantity,
+    ).toBeTruthy();
+  });
+  it("uses packages and weight for air with no sea equipment", () => {
+    const air = {
+      origin: locations.find((l) => l.code === "DAR" && l.type === "Airport"),
+      destination: locations.find(
+        (l) => l.code === "NBO" && l.type === "Airport",
+      ),
+      scope: "Airport to airport",
+    };
+    expect(validateFirstStep(air, "Air Freight")).toMatchObject({
+      packageCount: expect.any(String),
+      weight: expect.any(String),
+    });
+    expect(
+      validateFirstStep(
+        { ...air, packageCount: 12, weight: 240 },
+        "Air Freight",
+      ),
+    ).toEqual({});
+    expect(
+      normalizeTransportDetails(
+        { ...air, containers: "40ft container", quantity: 1 },
+        "Air Freight",
+      ).containers,
+    ).toBeUndefined();
+  });
+  it("accepts trucking street addresses rather than requiring ports", () => {
+    const road = {
+      origin: {
+        name: "Factory, Arusha",
+        country: "Tanzania",
+        type: "Address" as const,
+        code: "",
+      },
+      destination: {
+        name: "Warehouse, Nairobi",
+        country: "Kenya",
+        type: "Address" as const,
+        code: "",
+      },
+      scope: "Door to door",
+      pickupAddress: "Factory, Arusha",
+      deliveryAddress: "Warehouse, Nairobi",
+    };
+    expect(validateFirstStep(road, "Trucking")).toEqual({});
+  });
+  it("filters airport suggestions before limiting the results", () => {
+    expect(searchLocations("", ["Airport"]).length).toBeGreaterThan(0);
+    expect(
+      searchLocations("", ["Airport"]).every((l) => l.type === "Airport"),
+    ).toBe(true);
+  });
+  it("clears incompatible ports and equipment when switching to air", () => {
+    const d = switchTransport(sea, "Air Freight");
+    expect(d.origin).toBeUndefined();
+    expect(d.containers).toBeUndefined();
+    expect(d.scope).toBe("Airport to airport");
+  });
+  it("uses mode-specific progress steps and removes standalone clearance", () => {
+    expect(shipmentSteps("Air Freight")[0]).toBe("Air route & packages");
+    expect(shipmentSteps("Ocean Freight")[0]).toBe("Sea route & equipment");
+    expect(modes).not.toContain("Customs Clearance");
   });
 });

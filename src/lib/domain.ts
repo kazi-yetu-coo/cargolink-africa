@@ -5,7 +5,6 @@ export const modes = [
   "Trucking",
   "Rail Freight",
   "Multimodal",
-  "Customs Clearance",
   "Warehousing",
 ];
 export const money = (amount: number, currency = "USD") =>
@@ -24,22 +23,170 @@ export const formatDate = (value?: string) =>
         year: "numeric",
       })
     : "Not specified";
-export function validateShipment(d: ShipmentDetails, service: string) {
+export const equipmentOptions = [
+  "20ft container",
+  "40ft container",
+  "40ft high cube",
+  "20ft reefer",
+  "40ft reefer",
+  "Open top",
+  "Flat rack",
+  "LCL / loose cargo",
+  "Breakbulk / non-containerised",
+];
+export function scopeOptions(service: string) {
+  return service === "Warehousing"
+    ? ["Storage only", "Storage & handling"]
+    : service === "Ocean Freight"
+      ? ["Port to port", "Door to door", "Door to port", "Port to door"]
+      : service === "Air Freight"
+        ? [
+            "Airport to airport",
+            "Door to door",
+            "Door to airport",
+            "Airport to door",
+          ]
+        : service === "Trucking"
+          ? ["Door to door", "Terminal to terminal"]
+          : [
+              "Terminal to terminal",
+              "Door to door",
+              "Door to terminal",
+              "Terminal to door",
+            ];
+}
+export const defaultScope = (service: string) => scopeOptions(service)[0];
+export function normalizeTransportDetails(
+  details: ShipmentDetails,
+  service: string,
+): ShipmentDetails {
+  const d = {
+    ...details,
+    scope: scopeOptions(service).includes(details.scope || "")
+      ? details.scope
+      : defaultScope(service),
+  };
+  if (service !== "Ocean Freight") {
+    delete d.containers;
+    delete d.quantity;
+  }
+  if (service !== "Trucking") delete d.truckType;
+  return d;
+}
+export function switchTransport(
+  details: ShipmentDetails,
+  service: string,
+): ShipmentDetails {
+  const d = normalizeTransportDetails(
+    { ...details, scope: defaultScope(service) },
+    service,
+  );
+  if (service === "Ocean Freight" || service === "Air Freight") {
+    const type = service === "Ocean Freight" ? "Port" : "Airport";
+    if (d.origin?.type !== type) delete d.origin;
+    if (d.destination?.type !== type) delete d.destination;
+  }
+  if (service === "Ocean Freight") d.quantity ||= 1;
+  if (service === "Air Freight" && d.cargoType === "Containers")
+    d.cargoType = "General cargo";
+  return d;
+}
+export function shipmentSteps(service: string) {
+  return [
+    service === "Ocean Freight"
+      ? "Sea route & equipment"
+      : service === "Air Freight"
+        ? "Air route & packages"
+        : service === "Trucking"
+          ? "Road route & pickup"
+          : "Route & service",
+    service === "Air Freight" ? "Air cargo & schedule" : "Cargo & schedule",
+    "Services & handling",
+    "Review & submit",
+  ];
+}
+const wholePositive = (n: unknown) =>
+  Number.isInteger(Number(n)) && Number(n) > 0;
+export function validateFirstStep(d: ShipmentDetails, service: string) {
   const errors: Record<string, string> = {};
-  if (!d.origin) errors.origin = "Choose an origin location.";
+  if (!d.origin)
+    errors.origin = "Choose an origin location or enter a pickup address.";
+  if (service === "Ocean Freight" && d.origin && d.origin.type !== "Port")
+    errors.origin = "Choose an origin port.";
+  if (service === "Air Freight" && d.origin && d.origin.type !== "Airport")
+    errors.origin = "Choose an origin airport.";
   if (service !== "Warehousing" && !d.destination)
-    errors.destination = "Choose a destination location.";
+    errors.destination =
+      "Choose a destination location or enter a delivery address.";
+  if (
+    service === "Ocean Freight" &&
+    d.destination &&
+    d.destination.type !== "Port"
+  )
+    errors.destination = "Choose a destination port.";
+  if (
+    service === "Air Freight" &&
+    d.destination &&
+    d.destination.type !== "Airport"
+  )
+    errors.destination = "Choose a destination airport.";
   if (
     d.origin &&
     d.destination &&
-    JSON.stringify(d.origin) === JSON.stringify(d.destination)
+    JSON.stringify(d.origin) === JSON.stringify(d.destination) &&
+    service !== "Warehousing"
   )
     errors.destination = "Choose a destination different from the origin.";
+  const scope = d.scope || defaultScope(service);
+  if (
+    service !== "Warehousing" &&
+    scope.startsWith("Door") &&
+    !d.pickupAddress?.trim()
+  )
+    errors.pickupAddress = "Enter the full pickup address.";
+  if (
+    service !== "Warehousing" &&
+    scope.endsWith("door") &&
+    !d.deliveryAddress?.trim()
+  )
+    errors.deliveryAddress = "Enter the full delivery address.";
+  if (service === "Ocean Freight") {
+    if (
+      !d.containers ||
+      d.containers === "Not required" ||
+      d.containers === "Select equipment"
+    )
+      errors.containers = "Select sea shipment equipment.";
+    if (
+      d.containers &&
+      !["LCL / loose cargo", "LCL", "Breakbulk / non-containerised"].includes(
+        d.containers,
+      ) &&
+      !wholePositive(d.quantity)
+    )
+      errors.quantity = "Enter a positive whole number of containers.";
+  }
+  if (service === "Air Freight") {
+    if (!wholePositive(d.packageCount))
+      errors.packageCount =
+        "Enter a positive whole number of boxes or packages.";
+    if (!Number.isFinite(Number(d.weight)) || !(Number(d.weight) > 0))
+      errors.weight = "Enter the total gross weight in kilograms.";
+  }
+  return errors;
+}
+export function validateShipment(d: ShipmentDetails, service: string) {
+  const errors = validateFirstStep(d, service);
   if (!d.cargo?.trim()) errors.cargo = "Describe the cargo.";
-  if (!(Number(d.weight) > 0))
+  if (!Number.isFinite(Number(d.weight)) || !(Number(d.weight) > 0))
     errors.weight = "Enter a weight greater than zero.";
-  if (d.volume !== undefined && Number(d.volume) < 0)
+  if (
+    d.volume !== undefined &&
+    (!Number.isFinite(Number(d.volume)) || Number(d.volume) < 0)
+  )
     errors.volume = "Volume cannot be negative.";
+  if (d.packageCount !== undefined && !wholePositive(d.packageCount))
+    errors.packageCount = "Enter a positive whole number of packages.";
   if (!d.date) errors.date = "Select a shipment ready date.";
   else if (d.date < new Date().toISOString().slice(0, 10))
     errors.date = "Ready date cannot be in the past.";

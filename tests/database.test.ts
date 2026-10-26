@@ -26,7 +26,13 @@ beforeAll(async () => {
   await db.exec(readFileSync("tests/baseline.sql", "utf8"));
   await db.exec(
     readFileSync(
-      "supabase/migrations/20261026094759_marketplace_workflows.sql",
+      "supabase/migrations/20261026135933_marketplace_workflows.sql",
+      "utf8",
+    ),
+  );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/20261026140803_transport_specific_inquiries.sql",
       "utf8",
     ),
   );
@@ -93,6 +99,8 @@ describe("Marketplace database workflows and authorization", () => {
       weight: 20000,
       date: "2099-01-01",
       scope: "Port to port",
+      containers: "40ft container",
+      quantity: 1,
     };
     await db.query(
       "select public.save_rfq($1,'Ocean Freight',$2::jsonb,'',true)",
@@ -315,5 +323,116 @@ describe("Additional marketplace boundaries", () => {
         ),
       ),
     ).toBe(0);
+  });
+});
+describe("Mode-specific database validation", () => {
+  const detail = {
+    origin: { name: "Shanghai", type: "Port", country: "China", code: "CNSHA" },
+    destination: {
+      name: "Dar es Salaam",
+      type: "Port",
+      country: "Tanzania",
+      code: "TZDAR",
+    },
+    cargo: "Consumer goods",
+    weight: 25000,
+    date: "2099-01-01",
+    scope: "Door to door",
+    containers: "40ft high cube",
+    quantity: 1,
+  };
+  it("requires and persists both door addresses for sea freight", async () => {
+    await as(ids.owner);
+    await expect(
+      db.query(
+        "select public.save_rfq(null,'Ocean Freight',$1::jsonb,'',true)",
+        [JSON.stringify(detail)],
+      ),
+    ).rejects.toThrow(/pickup address/);
+    const d = {
+      ...detail,
+      pickupAddress: "Factory 10, Shanghai, China",
+      deliveryAddress: "Warehouse 4, Dar es Salaam, Tanzania",
+    };
+    const id = await value(
+      "select public.save_rfq(null,'Ocean Freight',$1::jsonb,'',true)",
+      [JSON.stringify(d)],
+    );
+    expect(
+      await value(
+        "select details->>'deliveryAddress' from public.rfqs where id=$1",
+        [id],
+      ),
+    ).toBe(d.deliveryAddress);
+  });
+  it("rejects missing or fractional sea container quantities", async () => {
+    await as(ids.owner);
+    for (const quantity of [0, 1.5])
+      await expect(
+        db.query(
+          "select public.save_rfq(null,'Ocean Freight',$1::jsonb,'',true)",
+          [JSON.stringify({ ...detail, scope: "Port to port", quantity })],
+        ),
+      ).rejects.toThrow(/containers/);
+  });
+  it("validates air packages and rejects sea equipment", async () => {
+    await as(ids.owner);
+    const air = {
+      ...detail,
+      origin: { name: "Dar es Salaam", type: "Airport", code: "DAR" },
+      destination: { name: "Nairobi", type: "Airport", code: "NBO" },
+      scope: "Airport to airport",
+      packageCount: 12,
+      weight: 240,
+    };
+    await expect(
+      db.query("select public.save_rfq(null,'Air Freight',$1::jsonb,'',true)", [
+        JSON.stringify(air),
+      ]),
+    ).rejects.toThrow(/sea equipment/);
+    const { containers, quantity, ...valid } = air;
+    void containers;
+    void quantity;
+    const id = await value(
+      "select public.save_rfq(null,'Air Freight',$1::jsonb,'',true)",
+      [JSON.stringify(valid)],
+    );
+    expect(
+      await value(
+        "select (details->>'packageCount')::int from public.rfqs where id=$1",
+        [id],
+      ),
+    ).toBe(12);
+    await expect(
+      db.query("select public.save_rfq(null,'Air Freight',$1::jsonb,'',true)", [
+        JSON.stringify({ ...valid, packageCount: 0 }),
+      ]),
+    ).rejects.toThrow(/boxes\/packages/);
+  });
+  it("accepts trucking addresses while rejecting standalone clearance inquiries", async () => {
+    await as(ids.owner);
+    const road = {
+      ...detail,
+      origin: { name: "Factory, Arusha", type: "Address", country: "Tanzania" },
+      destination: {
+        name: "Warehouse, Nairobi",
+        type: "Address",
+        country: "Kenya",
+      },
+      pickupAddress: "Factory, Arusha",
+      deliveryAddress: "Warehouse, Nairobi",
+    };
+    const id = await value(
+      "select public.save_rfq(null,'Trucking',$1::jsonb,'',true)",
+      [JSON.stringify(road)],
+    );
+    expect(
+      await value("select status from public.rfqs where id=$1", [id]),
+    ).toBe("open");
+    await expect(
+      db.query(
+        "select public.save_rfq(null,'Customs Clearance','{}','',false)",
+      ),
+    ).rejects.toThrow(/Clearing agents/);
   });
 });

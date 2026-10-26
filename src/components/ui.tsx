@@ -281,8 +281,14 @@ export function LocationInput({
   value,
   onChange,
   error,
+  types,
+  allowAddress = false,
+  placeholder,
 }: {
   label: string;
+  types?: FreightLocation["type"][];
+  allowAddress?: boolean;
+  placeholder?: string;
   value?: FreightLocation;
   onChange: (l: FreightLocation | undefined) => void;
   error?: string;
@@ -292,7 +298,16 @@ export function LocationInput({
     [open, setOpen] = useState(false),
     [active, setActive] = useState(0);
   const wrapper = useRef<HTMLDivElement>(null);
-  const results = searchLocations(query);
+  const results = searchLocations(query, types);
+  const customAddress =
+    allowAddress && query.trim().length >= 3
+      ? {
+          name: query.trim(),
+          country: "Not specified",
+          type: "Address" as const,
+          code: "",
+        }
+      : null;
   useEffect(() => {
     if (value) setQuery(locationLabel(value));
   }, [value]);
@@ -320,10 +335,20 @@ export function LocationInput({
           aria-expanded={open}
           aria-controls={`${id}-list`}
           aria-activedescendant={
-            open && results[active] ? `${id}-${active}` : undefined
+            open &&
+            (results[active] || (customAddress && active === results.length))
+              ? `${id}-${active}`
+              : undefined
           }
           value={query}
-          placeholder="Port, airport, terminal or city"
+          placeholder={
+            placeholder ||
+            (types?.includes("Airport")
+              ? "Search airport, city or IATA code"
+              : types?.includes("Port")
+                ? "Search port, city or port code"
+                : "Port, airport, terminal or city")
+          }
           autoComplete="off"
           aria-invalid={!!error}
           onFocus={() => {
@@ -333,23 +358,32 @@ export function LocationInput({
           onChange={(e) => {
             setQuery(e.target.value);
             onChange(undefined);
-            setQuery(e.target.value);
             setOpen(true);
             setActive(0);
           }}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();
-              setActive((a) => Math.min(a + 1, results.length - 1));
+              setActive((a) =>
+                Math.min(
+                  a + 1,
+                  Math.max(0, results.length + (customAddress ? 1 : 0) - 1),
+                ),
+              );
               setOpen(true);
             }
             if (e.key === "ArrowUp") {
               e.preventDefault();
               setActive((a) => Math.max(0, a - 1));
             }
-            if (e.key === "Enter" && open && results[active]) {
+            if (
+              e.key === "Enter" &&
+              open &&
+              (results[active] || customAddress)
+            ) {
               e.preventDefault();
-              choose(results[active]);
+              const chosen = results[active] || customAddress;
+              if (chosen) choose(chosen);
             }
             if (e.key === "Escape") setOpen(false);
           }}
@@ -382,7 +416,30 @@ export function LocationInput({
               </button>
             ))
           ) : (
-            <p>No match in this directory. Try a nearby city or terminal.</p>
+            <p>
+              No matching suggestion.{" "}
+              {allowAddress
+                ? "You can use the address you entered below."
+                : "Try a nearby city or terminal."}
+            </p>
+          )}
+          {customAddress && (
+            <button
+              type="button"
+              id={`${id}-${results.length}`}
+              role="option"
+              aria-selected={active === results.length}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => choose(customAddress)}
+            >
+              <MapPin size={16} />
+              <span>
+                <strong>Use “{customAddress.name}” as an address</strong>
+                <small>
+                  Entered address · confirm exact location with your provider
+                </small>
+              </span>
+            </button>
           )}
           <small className="directory-note">
             Curated location directory · verify exact terminals with your

@@ -41,9 +41,13 @@ export const locations: FreightLocation[] = [
   type: type as FreightLocation["type"],
   code,
 }));
-export function searchLocations(query: string) {
+export function searchLocations(
+  query: string,
+  types?: FreightLocation["type"][],
+) {
   const q = query.toLowerCase().trim();
   return locations
+    .filter((l) => !types || types.includes(l.type))
     .filter((l) =>
       `${l.name} ${l.country} ${l.code} ${l.type}`.toLowerCase().includes(q),
     )

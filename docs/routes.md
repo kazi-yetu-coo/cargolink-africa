@@ -5,7 +5,7 @@ All routes are defined in `src/App.tsx`. Public/auth/customer/provider/admin lay
 | Area | Route | Page / behavior |
 | --- | --- | --- |
 | Public | `/` | Homepage, route-first freight inquiry entry |
-| Public | `/services` | Seven service categories |
+| Public | `/services` | Six freight/storage service categories; clearance is quoted within freight |
 | Public | `/routes` | Curated trade corridors |
 | Public | `/for-businesses` | Cargo owner introduction |
 | Public | `/for-providers` | Provider introduction |
@@ -17,7 +17,7 @@ All routes are defined in `src/App.tsx`. Public/auth/customer/provider/admin lay
 | Public | `/privacy` | Data-use information and operator launch requirements |
 | Public | `/providers` | Verified provider directory |
 | Public | `/providers/:id` | Provider profile / save provider |
-| Public | `/inquiry` | Four-step RFQ editor, preserved pre-sign-in draft |
+| Public | `/inquiry` | Adaptive four-step RFQ editor; completed homepage route starts at step 2; preserved pre-sign-in draft |
 | Public | `/inquiry/assistant` | Conversational inquiry preparation; AI use requires sign-in |
 | Auth | `/auth/sign-in` | Email/password and Google sign-in |
 | Auth | `/auth/sign-up` | Registration and role choice |

@@ -29,6 +29,9 @@ type AssistantResult = {
   weight: number | null;
   volume: number | null;
   containers: string;
+  pickupAddress: string;
+  deliveryAddress: string;
+  packageCount: number | null;
   date: string;
   requirements: string;
 };
@@ -109,7 +112,12 @@ export function InquiryAssistant() {
       cargo: result.cargo,
       weight: result.weight ?? undefined,
       volume: result.volume ?? undefined,
-      containers: result.containers,
+      ...(result.service === "Ocean Freight"
+        ? { containers: result.containers }
+        : {}),
+      pickupAddress: result.pickupAddress,
+      deliveryAddress: result.deliveryAddress,
+      packageCount: result.packageCount ?? undefined,
       date: result.date,
       requirements: result.requirements,
       services: [],

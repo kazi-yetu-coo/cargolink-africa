@@ -4,7 +4,9 @@ A responsive freight marketplace built on the existing CargoLink Supabase projec
 
 ## Current handoff status
 
-The application is implemented locally and passes the checks described in `docs/verification.md`. **The remote database upgrade has not been applied.** Automatic approval review rejected the shared schema/permission change; the production application must remain on its existing version until the migration is approved, applied and verified. New workflow screens require that migration. Google OAuth is currently disabled in the existing Supabase project. The optional AI endpoint requires a server-only key and Vercel Functions.
+The application passes the checks described in `docs/verification.md`. **Both database migrations have been applied to the existing Supabase project with the owner's approval.** A live transaction-only smoke test verified drafts, address validation, publication, bidding, messaging, awarding and shipment updates; every temporary test change was rolled back and the original records were retained. The application is on a review branch and Vercel preview; the production frontend has not been promoted. Google OAuth is currently disabled, and the optional AI endpoint still requires a server-only key.
+
+The freight inquiry adapts by transport mode: sea equipment and container counts; air boxes/packages and gross weight with no sea equipment; trucking cities, terminals or manually entered street addresses. Door service reveals exact pickup/delivery fields. The homepage completes step 1 and opens the RFQ editor at step 2 with a completion message. Customs clearance is not a standalone inquiry; CFAs can include clearance fees in their detailed quotations.
 
 The existing `src.js` is preserved unchanged for reference; `index.html` now starts the typed React application. The original live Supabase project URL and publishable key remain the defaults. No privileged database or AI key is bundled in the browser.
 
@@ -45,13 +47,13 @@ See [the complete route inventory](docs/routes.md). Browser history routes requi
 
 ## Database architecture
 
-The additive migration is `supabase/migrations/20261026094759_marketplace_workflows.sql`. It targets the **existing CargoLink schema** in project `iacahumfwacpknggqjtd`; it is not a fresh Supabase bootstrap. Do not deploy `tests/baseline.sql` to a real project: that file is an isolated in-memory test fixture with mock Auth and Storage schemas.
+The additive migrations are `supabase/migrations/20261026135933_marketplace_workflows.sql` and `supabase/migrations/20261026140803_transport_specific_inquiries.sql`. They target the **existing CargoLink schema** in project `iacahumfwacpknggqjtd`; it is not a fresh Supabase bootstrap. Do not deploy `tests/baseline.sql` to a real project: that file is an isolated in-memory test fixture with mock Auth and Storage schemas.
 
 Existing tables, auth identities and records are retained. The migration extends RFQs, quotations and company profiles; adds saved providers, shipment events, support, activity and assistant usage; fixes provider eligibility and award validation; adds private verification storage and guards workflow actions. All new tables enable RLS. Trigger functions are not directly callable by client roles. Privileged workflow functions explicitly check authenticated ownership or administrator membership and use an empty search path; their restricted `authenticated` execution grants are intentional.
 
 Authorization is enforced in Postgres policies and transactional functions. Browser route guards provide a friendly redirect and do not replace database authorization. Administrator status comes from `platform_admins`, never user-editable metadata. Awards lock the RFQ and confirm the selected provider is still verified, active and eligible. Only the awarded provider can update shipment milestones. Documents use private storage and short-lived signed access URLs.
 
-The migration changes access policies and revokes broad write grants, so applying it requires the explicit approval requested in the handoff. Back up the existing database and coordinate the application rollout. Do not apply it through a workaround to the approval rejection.
+The migrations are already applied to the existing project. Their filenames match the hosted migration ledger. Do not reapply them there. Future database changes should be staged and reviewed separately. A pre-upgrade schema snapshot was captured locally before applying the approved upgrade.
 
 ## Deployment
 
@@ -61,7 +63,7 @@ A CI activation template is supplied in `docs/ci-workflow.yml`; installing it re
 
 ## Verification limits
 
-Local tests exercise actual PostgreSQL execution through PGlite with a fixture of the original schema. They verify the migration and RLS/transaction logic, not the hosted Supabase Auth/Storage service implementation. Browser checks cover public pages, responsive demo records, RFQ preparation and signed-out protection. End-to-end live sign-in, uploads, bids, awards, Google OAuth and paid AI calls still require the approved migration, configured providers and disposable staging accounts. No live RFQs or messages were created during verification.
+Local tests exercise actual PostgreSQL execution through PGlite with a fixture of the original schema. They verify the migration and RLS/transaction logic, not the hosted Supabase Auth/Storage service implementation. Browser checks cover public pages, responsive demo records, RFQ preparation and signed-out protection. Hosted Auth sign-up/sign-in, document uploads, Google OAuth and paid AI calls still require configured services and disposable staging accounts. Bidding, messages, awards and milestones were verified directly under authenticated database roles inside a transaction which was fully rolled back. No test records were retained.
 
 The location directory is curated and local, and clearly labelled; it is not a comprehensive live global ports API. Shipment status is provider-reported, not GPS telemetry. Payments, carrier booking, WhatsApp and legal contract execution are not represented as implemented integrations. Policy pages include operator setup requirements for the business identity, jurisdiction, retention and approved legal language before commercial launch.
 

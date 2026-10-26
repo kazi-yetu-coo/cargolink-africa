@@ -13,7 +13,7 @@ export type Company = {
 export type FreightLocation = {
   name: string;
   country: string;
-  type: "Port" | "Airport" | "City" | "Inland terminal";
+  type: "Port" | "Airport" | "City" | "Inland terminal" | "Address";
   code: string;
 };
 export type ShipmentDetails = {
@@ -24,6 +24,10 @@ export type ShipmentDetails = {
   weight?: number;
   volume?: number;
   containers?: string;
+  pickupAddress?: string;
+  deliveryAddress?: string;
+  packageCount?: number;
+  truckType?: string;
   quantity?: number;
   scope?: string;
   date?: string;

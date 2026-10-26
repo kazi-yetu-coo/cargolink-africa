@@ -21,26 +21,52 @@ import {
   Button,
   ButtonLink,
   Field,
-  LocationInput,
   Panel,
   Select,
 } from "../components/ui";
-import type { FreightLocation } from "../lib/types";
+import type { ShipmentDetails } from "../lib/types";
 import { locations } from "../lib/locations";
-import { modes } from "../lib/domain";
+import {
+  modes,
+  defaultScope,
+  normalizeTransportDetails,
+  switchTransport,
+  validateFirstStep,
+} from "../lib/domain";
+import { RouteFields, TransportFields } from "../components/shipment-fields";
 import { supabase, checked } from "../lib/supabase";
 export function Home() {
-  const [mode, setMode] = useState("Ocean Freight"),
-    [origin, setOrigin] = useState<FreightLocation>(),
-    [destination, setDestination] = useState<FreightLocation>(),
-    [cargo, setCargo] = useState("General cargo");
+  const [mode, setMode] = useState("Ocean Freight");
+  const [details, setDetails] = useState<ShipmentDetails>({
+    cargoType: "General cargo",
+    scope: defaultScope("Ocean Freight"),
+    quantity: 1,
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+  function update<K extends keyof ShipmentDetails>(
+    key: K,
+    value: ShipmentDetails[K],
+  ) {
+    setDetails((d) => ({ ...d, [key]: value }));
+    setErrors((e) => ({ ...e, [key]: "" }));
+  }
+  function changeMode(value: string) {
+    setMode(value);
+    setDetails((d) => switchTransport(d, value));
+    setErrors({});
+  }
   function start() {
+    const problems = validateFirstStep(details, mode);
+    setErrors(problems);
+    if (Object.keys(problems).length) return;
     sessionStorage.setItem(
       "cargolink-inquiry",
       JSON.stringify({
         service: mode,
-        details: { origin, destination, cargoType: cargo },
+        details: normalizeTransportDetails(details, mode),
+        entryStepCompleted: true,
+        resumeStep: 1,
       }),
     );
     navigate("/inquiry");
@@ -89,14 +115,13 @@ export function Home() {
               ["Ocean Freight", Ship],
               ["Air Freight", Plane],
               ["Trucking", Truck],
-              ["Customs Clearance", PackageCheck],
               ["Warehousing", Warehouse],
             ].map(([s, I]) => {
               const Icon = I as typeof Ship;
               return (
                 <button
                   key={String(s)}
-                  onClick={() => setMode(String(s))}
+                  onClick={() => changeMode(String(s))}
                   className={mode === s ? "active" : ""}
                 >
                   <Icon size={18} />
@@ -105,36 +130,61 @@ export function Home() {
               );
             })}
           </div>
-          <div className="quick-fields">
-            <LocationInput
-              label={mode === "Warehousing" ? "Storage location" : "From"}
-              value={origin}
-              onChange={setOrigin}
+          <form
+            className="quick-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              start();
+            }}
+            noValidate
+          >
+            <RouteFields
+              service={mode}
+              details={details}
+              onChange={update}
+              errors={errors}
             />
-            {mode !== "Warehousing" && (
-              <LocationInput
-                label="To"
-                value={destination}
-                onChange={setDestination}
+            <div className="quick-cargo-fields">
+              <Select
+                label="Cargo type"
+                value={details.cargoType || "General cargo"}
+                onChange={(v) => update("cargoType", v)}
+                options={
+                  mode === "Air Freight"
+                    ? ["General cargo", "Perishables", "Hazardous", "Vehicles"]
+                    : [
+                        "General cargo",
+                        "Containers",
+                        "Project cargo",
+                        "Perishables",
+                        "Hazardous",
+                        "Vehicles",
+                      ]
+                }
               />
+              <TransportFields
+                service={mode}
+                details={details}
+                onChange={update}
+                errors={errors}
+                quick
+              />
+            </div>
+            {Object.values(errors).some(Boolean) && (
+              <Alert>
+                Please complete the highlighted shipment fields to continue.
+              </Alert>
             )}
-            <Select
-              label="Cargo type"
-              value={cargo}
-              onChange={setCargo}
-              options={[
-                "General cargo",
-                "Containers",
-                "Project cargo",
-                "Perishables",
-                "Hazardous",
-                "Vehicles",
-              ]}
-            />
-            <Button onClick={start}>
-              Get quotations <ArrowRight size={18} />
-            </Button>
-          </div>
+            <div className="quick-action">
+              <p>
+                Start with your route. Complete the cargo details in the next
+                steps.
+              </p>
+              <Button type="submit">
+                Get quotations <ArrowRight size={18} />
+              </Button>
+            </div>
+          </form>
           <div className="quick-bottom">
             <span>
               <ShieldCheck size={15} />
@@ -156,8 +206,17 @@ export function Home() {
               <button
                 key={a}
                 onClick={() => {
-                  setOrigin(locations.find((l) => l.name.startsWith(a)));
-                  setDestination(locations.find((l) => l.name === b));
+                  changeMode("Trucking");
+                  setDetails((d) => ({
+                    ...switchTransport(d, "Trucking"),
+                    origin:
+                      locations.find(
+                        (l) => l.name.startsWith(a) && l.type === "City",
+                      ) || locations.find((l) => l.name.startsWith(a)),
+                    destination: locations.find(
+                      (l) => l.name === b && l.type === "City",
+                    ),
+                  }));
                 }}
               >
                 {a}
@@ -358,15 +417,7 @@ export function ContentPage({ page: given }: { page?: string }) {
       {page === "services" ? (
         <div className="three-columns">
           {modes.map((m, i) => {
-            const Icon = [
-              Ship,
-              Plane,
-              Truck,
-              TrainFront,
-              Globe2,
-              PackageCheck,
-              Warehouse,
-            ][i];
+            const Icon = [Ship, Plane, Truck, TrainFront, Globe2, Warehouse][i];
             return (
               <Panel key={m}>
                 <span className="icon-tile">

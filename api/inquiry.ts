@@ -13,7 +13,6 @@ const fields = {
       "Trucking",
       "Rail Freight",
       "Multimodal",
-      "Customs Clearance",
       "Warehousing",
     ],
   },
@@ -23,6 +22,9 @@ const fields = {
   weight: { type: ["number", "null"] },
   volume: { type: ["number", "null"] },
   containers: { type: "string" },
+  pickupAddress: { type: "string" },
+  deliveryAddress: { type: "string" },
+  packageCount: { type: ["number", "null"] },
   date: { type: "string" },
   requirements: { type: "string" },
 };
@@ -105,7 +107,7 @@ export async function POST(request: Request) {
         model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
         store: false,
         max_output_tokens: 1100,
-        instructions: `You prepare freight inquiry drafts for CargoLink Africa. Today is ${new Date().toISOString().slice(0, 10)}. Extract only shipment facts stated by the user across this conversation. Ask for missing route, mode, cargo, gross weight in kg, volume and ready date. Never fabricate location codes, charges, providers, records or availability. Unknown strings must be empty and unknown numbers null. Use ISO YYYY-MM-DD for explicitly resolved dates. reply should briefly acknowledge details and ask the next relevant question. Never claim to submit, save or book anything. All output goes to a human-reviewed form.`,
+        instructions: `You prepare freight inquiry drafts for CargoLink Africa. Today is ${new Date().toISOString().slice(0, 10)}. Extract only shipment facts stated by the user across this conversation. Ask for missing route, mode, cargo, gross weight in kg, volume and ready date. Ask for full pickup and delivery addresses for door-to-door service, sea equipment for ocean freight, or box/package count and gross weight for air freight. Air shipments do not use sea equipment. Customs clearance is not a standalone service; CFAs quote clearance fees within the freight charge breakdown. Never fabricate location codes, charges, providers, records or availability. Unknown strings must be empty and unknown numbers null. Use ISO YYYY-MM-DD for explicitly resolved dates. reply should briefly acknowledge details and ask the next relevant question. Never claim to submit, save or book anything. All output goes to a human-reviewed form.`,
         input: body.messages,
         text: {
           format: {

@@ -4,16 +4,16 @@
 
 - `npm run lint`: passed, no warnings/errors.
 - `npm run typecheck`: passed for application, API and unit test source.
-- `npm test`: 24 tests passed in two suites. No production writes or paid AI requests.
+- `npm test`: 36 tests passed in two suites. No test records retained and no paid AI requests.
 - `npm run build`: passed; Vite production assets generated successfully, with routes split into separate page modules.
 - `npm audit --omit=dev --audit-level=high`: zero vulnerabilities reported.
 - A CI activation template is supplied in `docs/ci-workflow.yml`. The GitHub connection lacks workflow scope, so it has not been installed or run remotely; local checks passed.
 
-### Domain/API tests (9)
+### Domain/API tests (17)
 
 Location name/country/code search; port/airport/inland terminal types; missing required shipment details; identical routes and invalid dates/volume; warehousing without a transport destination; scope comparison warning; mixed-currency/validity warning; itemised total; decimal currency precision; and explicit AI-unconfigured response are covered across nine test cases (some cases check multiple invariants).
 
-### Database tests (15)
+### Database tests (19)
 
 The checked-in migration is actually executed inside a fresh PGlite PostgreSQL instance, starting from a fixture matching the original CargoLink tables and relevant policies. Tests switch to the real `authenticated` database role and set test JWT subjects so RLS executes as it would for clients.
 
@@ -33,7 +33,7 @@ The checked-in migration is actually executed inside a fresh PGlite PostgreSQL i
 14. Direct invalid RFQ creation and expired quotations blocked.
 15. Notification field permissions restrict updates to read state.
 
-These are local PostgreSQL tests. They do not claim the hosted migration is applied or exercise Supabase's hosted Auth/Storage implementations.
+Eight additional domain tests cover door addresses, sea equipment/counts, air package/weight normalization, trucking addresses, mode-filtered suggestions, mode switching and adaptive step labels. Four additional database tests enforce door addresses, sea quantities, air packages/no sea equipment, trucking addresses and rejection of standalone clearance. Hosted Auth/Storage service implementations are separate from these local SQL tests.
 
 ## Browser checks performed
 
@@ -53,8 +53,14 @@ Saved screenshots in the handoff outputs show the homepage and desktop/mobile qu
 
 ## Integration checks and limits
 
-Read-only inspection of the existing Supabase project confirmed the original tables with RLS, discovered bid eligibility/award bugs, confirmed Google OAuth disabled, email authentication enabled with email confirmation, and zero assigned administrator accounts. A tracked migration fixes the database issues, but remote application of that migration was rejected by automatic approval review due to shared schema/permission changes. It remains unapplied.
+Both migrations were applied to the original Supabase project after the owner's explicit approval. Their checked-in versions match the hosted migration ledger. Post-upgrade checks confirm the original one RFQ and one company are preserved and verification storage is private.
 
-The existing Vercel project and prior production deployment were found. This implementation was not promoted to production. OpenAI credentials have not been provisioned, so no successful live AI response is claimed. The assistant's missing-key behavior is tested.
+A hosted transaction-only test created temporary test identities, set authenticated database roles, saved a draft, rejected a missing door pickup address, published the RFQ, submitted a verified provider quote, sent a private message, awarded the bid, and updated the shipment milestone. All assertions passed and **the entire transaction was rolled back**, retaining no test identities, records or notifications.
 
-Live end-to-end sign-up/onboarding, upload, verification, bid, message, award and notification testing must follow the deployment checklist after migration approval and service configuration. Until then this is a tested implementation and review package, not a completed live production rollout.
+Browser checks verify sea door addresses/equipment, air airports/package count/weight with no sea equipment, and trucking city plus custom address entry. Homepage completion opens the success banner at step 2 with mode-specific progress labels. Mobile trucking form and the handoff have a 390px document width at a 390px viewport. The first-step data, including 12 air packages and 240kg, is preserved through navigation. An empty trucking delivery address is blocked before advancing.
+
+Remaining service configuration: Google OAuth is disabled, there is no designated administrator, and no AI key has been provisioned. The production frontend is not promoted. The existing Vercel protection remains enabled on review previews. Hosted Auth sign-in/sign-up, actual storage uploads and paid AI responses still need disposable staging-account verification.
+
+## Database advisory review
+
+The anonymous trigger-function execution warnings were removed by the upgrade. Remaining authenticated security-definer notices are expected for explicitly guarded ownership/admin workflow RPCs and policy helpers; inspect [Supabase's function execution advisory](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable). The assistant usage ledger deliberately has no client policies and no client table grants; only the guarded rate-limit function accesses it. See [the RLS-policy advisory](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy). Supabase's existing leaked-password protection setting remains disabled and is an operator configuration dependency: [password protection setup](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).

@@ -10,9 +10,9 @@
 
 ## Required rollout order
 
-1. Review and explicitly approve `supabase/migrations/20261026094759_marketplace_workflows.sql`. Automatic approval review rejected applying this shared-database change because it replaces permissions/policies and adds schema, triggers and private storage. It remains unapplied; do not bypass this rejection.
-2. Back up the database and rehearse the migration against a staging clone of the existing schema. The local tests are a useful check, not a substitute for a hosted staging rehearsal. Existing deployed legacy clients should not remain in use during the coordinated rollout because the new permissions tighten their direct write paths.
-3. Apply the approved migration once through the authenticated Supabase migration tooling. Keep its migration history aligned with the checked-in filename. Use the actual existing project's baseline/history; do not use the in-memory test fixture as a production bootstrap.
+1. **Completed:** the owner approved the database upgrade and both checked-in migrations were applied to the existing Supabase project. Hosted ledger versions are `20261026135933` and `20261026140803`. Do not reapply these migrations to that project.
+2. **Completed:** a pre-upgrade schema snapshot was retained locally; post-upgrade checks confirm the original RFQ and company remain and the verification bucket is private.
+3. **Completed:** a live authenticated database smoke test covered draft, missing door-address rejection, publication, verified provider bid, private message, award and milestone. The entire test was rolled back. Local tests additionally exercise mode-specific sea/air/trucking fields. For future schema changes, rehearse against staging and coordinate the frontend release.
 4. Configure the environment variables below in the existing Vercel project, for Preview and Production as appropriate. The frontend has original publishable defaults, but setting variables explicitly is recommended. Never prefix a server secret with `VITE_`.
 5. Configure Supabase Auth's site URL and callback allowlist for the chosen preview and production URLs. Allow `/auth/callback` and `/auth/update-password` destinations for each origin.
 6. Enable Google in Supabase Auth and supply the operator's Google OAuth client ID/secret. Register Supabase's provider callback URL in Google Cloud. Google was confirmed **disabled** at handoff; the button is integrated but cannot complete OAuth until this is done. See [Supabase Google Auth](https://supabase.com/docs/guides/auth/social-login/auth-google).
@@ -52,3 +52,7 @@ The GitHub connection refused creation of an active workflow because its OAuth g
 ## Other operating dependencies
 
 The location directory is curated, not a live complete worldwide logistics registry. Add an authoritative global location feed if broader coverage is required. Shipment progress uses provider-entered milestones, not carrier telemetry. The operator must complete the legal entity, support contact, jurisdiction, retention and approved policy language before public commercial launch. Payments, carrier bookings and WhatsApp are separate integrations and are not simulated as live features.
+
+## Current inquiry behavior
+
+The first step is completed on the homepage. Sea inquiries collect ports, scope, equipment and container/package count. Air inquiries collect airports, scope, boxes/packages and gross weight; sea equipment is not submitted. Door-to-door and one-sided door scopes reveal the appropriate exact addresses. Trucking accepts cities, inland terminals and entered street addresses (clearly marked as user-entered, not geocoded). The editor opens at cargo/schedule with the first step marked complete. Clearance remains an itemised provider quotation charge; no new standalone clearance inquiry can be submitted.
