@@ -8,6 +8,7 @@ import {
   switchTransport,
   shipmentSteps,
   modes,
+  inquiryProgress,
 } from "../src/lib/domain";
 import { searchLocations, locations } from "../src/lib/locations";
 import { demoBids } from "../src/lib/demo";
@@ -213,5 +214,54 @@ describe("Transport-specific inquiry stages", () => {
     expect(shipmentSteps("Air Freight")[0]).toBe("Air route & packages");
     expect(shipmentSteps("Ocean Freight")[0]).toBe("Sea route & equipment");
     expect(modes).not.toContain("Customs Clearance");
+  });
+});
+
+describe("Interactive inquiry progress", () => {
+  const valid = {
+    origin: locations[0],
+    destination: locations[1],
+    scope: "Port to port",
+    containers: "40ft container",
+    quantity: 1,
+    cargo: "Consumer goods",
+    weight: 1000,
+    date: "2099-01-01",
+  };
+  it("starts low and grows as required route and cargo fields become valid", () => {
+    const empty = inquiryProgress({}, "Ocean Freight", 0).percent;
+    const route = inquiryProgress(
+      {
+        origin: locations[0],
+        destination: locations[1],
+        scope: "Port to port",
+        containers: "40ft container",
+        quantity: 1,
+      },
+      "Ocean Freight",
+      1,
+    ).percent;
+    const cargo = inquiryProgress(valid, "Ocean Freight", 1).percent;
+    expect(empty).toBe(0);
+    expect(route).toBeGreaterThan(empty);
+    expect(cargo).toBeGreaterThan(route);
+  });
+  it("reflects optional services being filled and reaches 100 only when ready to submit", () => {
+    const before = inquiryProgress(valid, "Ocean Freight", 2).percent;
+    const services = inquiryProgress(
+      { ...valid, services: ["Insurance"] },
+      "Ocean Freight",
+      2,
+    ).percent;
+    expect(services).toBeGreaterThan(before);
+    expect(inquiryProgress(valid, "Ocean Freight", 3)).toEqual({
+      percent: 100,
+      completed: 4,
+    });
+  });
+  it("drops when a required field is removed", () => {
+    expect(
+      inquiryProgress({ ...valid, cargo: "" }, "Ocean Freight", 3).percent,
+    ).toBeLessThan(100);
   });
 });

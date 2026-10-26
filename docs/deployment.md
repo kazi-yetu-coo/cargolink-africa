@@ -10,13 +10,13 @@
 
 ## Required rollout order
 
-1. **Completed:** the owner approved the database upgrade and both checked-in migrations were applied to the existing Supabase project. Hosted ledger versions are `20261026135933` and `20261026140803`. Do not reapply these migrations to that project.
+1. **Completed:** the owner approved the database upgrade and all five checked-in upgrade migrations were applied to the existing Supabase project. Hosted ledger versions are `20261026135933`, `20261026140803`, `20261026160747`, `20261026160813` and `20261026160837`. Do not reapply these migrations to that project.
 2. **Completed:** a pre-upgrade schema snapshot was retained locally; post-upgrade checks confirm the original RFQ and company remain and the verification bucket is private.
 3. **Completed:** a live authenticated database smoke test covered draft, missing door-address rejection, publication, verified provider bid, private message, award and milestone. The entire test was rolled back. Local tests additionally exercise mode-specific sea/air/trucking fields. For future schema changes, rehearse against staging and coordinate the frontend release.
 4. Configure the environment variables below in the existing Vercel project, for Preview and Production as appropriate. The frontend has original publishable defaults, but setting variables explicitly is recommended. Never prefix a server secret with `VITE_`.
 5. Configure Supabase Auth's site URL and callback allowlist for the chosen preview and production URLs. Allow `/auth/callback` and `/auth/update-password` destinations for each origin.
 6. Enable Google in Supabase Auth and supply the operator's Google OAuth client ID/secret. Register Supabase's provider callback URL in Google Cloud. Google was confirmed **disabled** at handoff; the button is integrated but cannot complete OAuth until this is done. See [Supabase Google Auth](https://supabase.com/docs/guides/auth/social-login/auth-google).
-7. Assign a designated, existing operator account to `public.platform_admins` through a trusted database session. There were **zero administrators** at handoff. The owner must identify which account receives this privilege; public sign-up cannot create administrators.
+7. **Completed:** administrator membership is provisioned for the existing confirmed operator account. Sign in with its existing password and use **Admin workspace** in the dashboard header. Public sign-up cannot create administrators. No password was changed or generated.
 8. Configure a production email sender and verify sign-up confirmation and password recovery. Email auth is enabled and confirmation is required in the existing project. Enable appropriate password protection and review Supabase Auth security settings before commercial launch.
 9. Build a Vercel preview from the implementation branch. `vercel.json` selects Vite, `npm run build`, `dist`, security headers and history fallback while retaining native `/api` functions. The API uses Vercel's Node.js named `POST` handler support: [Vercel Node.js functions](https://vercel.com/docs/functions/runtimes/node-js).
 10. Run the staging/live smoke checklist below with disposable cargo owner, provider and administrator accounts. Fix failures before merging/promoting to production. Retain the prior deployment and database backup for recovery.
@@ -56,3 +56,9 @@ The location directory is curated, not a live complete worldwide logistics regis
 ## Current inquiry behavior
 
 The first step is completed on the homepage. Sea inquiries collect ports, scope, equipment and container/package count. Air inquiries collect airports, scope, boxes/packages and gross weight; sea equipment is not submitted. Door-to-door and one-sided door scopes reveal the appropriate exact addresses. Trucking accepts cities, inland terminals and entered street addresses (clearly marked as user-entered, not geocoded). The editor opens at cargo/schedule with the first step marked complete. Clearance remains an itemised provider quotation charge; no new standalone clearance inquiry can be submitted.
+
+## Administrator review workspaces
+
+The admin header switches between Admin console, Cargo Owner review, CFA review and Truck Owner review. Switching is authorized by `platform_admins` in the database. Each review role uses a private company owned by the same administrator; existing company membership is preserved. Review inquiries, quotations and notifications persist and remain separate from live listings, directories and admin metrics. Review providers are preverified solely within this private workspace. Truck owners can quote road and multimodal inquiries; CFAs can quote all eligible modes.
+
+Create an inquiry as Cargo Owner review, switch to CFA or eligible Truck Owner review to quote, return to Cargo Owner review to award, then switch to the awarded provider to update milestones. Return to Admin console for real verification and moderation. Review messages need separate live accounts because the review roles share one authentication identity; the review messaging page explains this limitation.

@@ -68,3 +68,7 @@ Local tests exercise actual PostgreSQL execution through PGlite with a fixture o
 The location directory is curated and local, and clearly labelled; it is not a comprehensive live global ports API. Shipment status is provider-reported, not GPS telemetry. Payments, carrier booking, WhatsApp and legal contract execution are not represented as implemented integrations. Policy pages include operator setup requirements for the business identity, jurisdiction, retention and approved legal language before commercial launch.
 
 Hero photography uses the image already referenced by the original application, copied into `public/assets/cargo-port.jpg` for dependable serving. Source: [Unsplash](https://images.unsplash.com/photo-1578575437130-527eed3abbec). Google Fonts supplies Manrope and DM Sans with system fallbacks.
+
+## Inquiry progress and administrator review
+
+The inquiry editor includes an animated, field-based completion line across four sections. Provider registration distinguishes Truck Owners / Road Haulage from Clearing & Forwarding Agents (CFAs). An authorized administrator can switch private Cargo Owner, CFA and Truck Owner review workspaces from the dashboard header; records persist separately from live marketplace listings. Server-side membership checks govern every switch. See `docs/deployment.md` for review workflow and messaging limits. The designated existing operator has administrator membership; passwords are unchanged.

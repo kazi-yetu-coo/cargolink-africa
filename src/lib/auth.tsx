@@ -8,21 +8,35 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase, checked } from "./supabase";
-import type { Company, Role } from "./types";
+import type { Company, Role, WorkspaceKind } from "./types";
+type WorkspaceContext = {
+  company: Company | null;
+  role: Role;
+  is_admin: boolean;
+  workspace: WorkspaceKind | null;
+};
 type Auth = {
   user: User | null;
   company: Company | null;
   role: Role;
+  isAdmin: boolean;
+  isReview: boolean;
+  workspace: WorkspaceKind | null;
   loading: boolean;
   error: string;
   refresh: () => Promise<void>;
+  switchWorkspace: (kind: WorkspaceKind) => Promise<Role>;
   signOut: () => Promise<void>;
 };
 const Context = createContext<Auth | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null),
-    [company, setCompany] = useState<Company | null>(null),
-    [role, setRole] = useState<Role>("customer"),
+    [context, setContext] = useState<WorkspaceContext>({
+      company: null,
+      role: "customer",
+      is_admin: false,
+      workspace: null,
+    }),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
   const refresh = useCallback(async () => {
@@ -31,37 +45,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error: authError } = await supabase.auth.getUser();
       if (authError && authError.name !== "AuthSessionMissingError")
         throw authError;
-      const u = data.user;
-      setUser(u);
-      if (!u) {
-        setCompany(null);
-        setRole("customer");
+      setUser(data.user);
+      if (!data.user) {
+        setContext({
+          company: null,
+          role: "customer",
+          is_admin: false,
+          workspace: null,
+        });
         return;
       }
-      const [companies, admins] = await Promise.all([
-        checked(
-          supabase
-            .from("companies")
-            .select("*")
-            .eq("owner_id", u.id)
-            .order("created_at")
-            .limit(1),
-        ),
-        checked(
-          supabase
-            .from("platform_admins")
-            .select("user_id")
-            .eq("user_id", u.id),
-        ),
-      ]);
-      const c = (companies?.[0] as Company) || null;
-      setCompany(c);
-      setRole(
-        admins?.length
-          ? "admin"
-          : c?.role === "shipper"
-            ? "customer"
-            : "provider",
+      setContext(
+        (await checked(
+          supabase.rpc("get_workspace_context"),
+        )) as WorkspaceContext,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load your account.");
@@ -82,16 +79,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <Context.Provider
       value={{
         user,
-        company,
-        role,
+        company: context.company,
+        role: context.role,
+        isAdmin: context.is_admin,
+        isReview:
+          context.is_admin &&
+          context.workspace !== null &&
+          context.workspace !== "admin",
+        workspace: context.workspace,
         loading,
         error,
         refresh,
+        switchWorkspace: async (kind) => {
+          const next = (await checked(
+            supabase.rpc("switch_admin_workspace", { p_workspace: kind }),
+          )) as WorkspaceContext;
+          setContext(next);
+          return next.role;
+        },
         signOut: async () => {
           await checked(supabase.auth.signOut());
           setUser(null);
-          setCompany(null);
-          setRole("customer");
+          setContext({
+            company: null,
+            role: "customer",
+            is_admin: false,
+            workspace: null,
+          });
         },
       }}
     >
@@ -100,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 export function useAuth() {
-  const v = useContext(Context);
-  if (!v) throw new Error("Auth provider missing");
-  return v;
+  const value = useContext(Context);
+  if (!value) throw new Error("Auth provider missing");
+  return value;
 }

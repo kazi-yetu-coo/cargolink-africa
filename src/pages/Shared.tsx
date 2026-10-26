@@ -31,6 +31,7 @@ import {
   TextArea,
   Verified,
 } from "../components/ui";
+import { recordScope } from "../lib/review";
 import { useAuth } from "../lib/auth";
 import { useLoad } from "../lib/hooks";
 import { checked, supabase } from "../lib/supabase";
@@ -45,6 +46,25 @@ import type {
 } from "../lib/types";
 import { demoCompanies } from "../lib/demo";
 export function Messages() {
+  const { isReview } = useAuth();
+  return isReview ? (
+    <>
+      <PageTitle
+        title="Messages"
+        description="Private shipment conversations"
+      />
+      <Panel>
+        <Empty
+          title="Review messaging"
+          description="Role review uses your single administrator sign-in. Private messages are available between separate live cargo owner and provider accounts."
+        />
+      </Panel>
+    </>
+  ) : (
+    <LiveMessages />
+  );
+}
+function LiveMessages() {
   const { user } = useAuth(),
     [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(""),
@@ -279,19 +299,21 @@ export function Messages() {
   );
 }
 export function Notifications() {
-  const { user, role } = useAuth();
+  const { user, role, isReview } = useAuth();
   const [filter, setFilter] = useState("All"),
     [error, setError] = useState("");
   const loader = useCallback(
     async () =>
       (await checked(
-        supabase
-          .from("notifications")
-          .select("*")
+        recordScope(
+          supabase.from("notifications").select("*"),
+          isReview,
+          user?.id,
+        )
           .eq("user_id", user?.id)
           .order("created_at", { ascending: false }),
       )) as Notification[],
-    [user?.id],
+    [user?.id, isReview],
   );
   const { data, error: loadError, loading, reload } = useLoad(loader);
   useEffect(() => {
@@ -326,10 +348,14 @@ export function Notifications() {
   );
   async function mark(id?: string) {
     try {
-      let q = supabase
-        .from("notifications")
-        .update({ read_at: new Date().toISOString() })
-        .eq("user_id", user?.id);
+      let q = recordScope(
+        supabase
+          .from("notifications")
+          .update({ read_at: new Date().toISOString() })
+          .eq("user_id", user?.id),
+        isReview,
+        user?.id,
+      );
       q = id ? q.eq("id", id) : q.is("read_at", null);
       await checked(q);
       await reload();
@@ -890,6 +916,12 @@ export function ProviderProfile() {
       />
       {id?.startsWith("demo-") && (
         <Alert tone="info">This provider profile is sample data.</Alert>
+      )}
+      {c.review_owner_id && (
+        <Alert tone="info">
+          Private administrator review provider. This company is excluded from
+          the live provider directory.
+        </Alert>
       )}
       {message && <Alert tone="success">{message}</Alert>}
       {error && <Alert>{error}</Alert>}

@@ -227,3 +227,64 @@ export const costTotal = (p: {
   inland: number;
   other: number;
 }) => Object.values(p).reduce((a, b) => a + Math.round(b * 100), 0) / 100;
+export function inquiryProgress(
+  d: ShipmentDetails,
+  service: string,
+  step: number,
+  notes = "",
+  furthestStep = step,
+) {
+  const first = validateFirstStep(d, service),
+    all = validateShipment(d, service),
+    scope = d.scope || defaultScope(service);
+  const routeFields = [
+    "origin",
+    ...(service === "Warehousing" ? [] : ["destination"]),
+    ...(scope.startsWith("Door") && service !== "Warehousing"
+      ? ["pickupAddress"]
+      : []),
+    ...(scope.endsWith("door") && service !== "Warehousing"
+      ? ["deliveryAddress"]
+      : []),
+    ...(service === "Ocean Freight"
+      ? [
+          "containers",
+          ...(d.containers &&
+          ![
+            "LCL",
+            "LCL / loose cargo",
+            "Breakbulk / non-containerised",
+          ].includes(d.containers)
+            ? ["quantity"]
+            : []),
+        ]
+      : []),
+    ...(service === "Air Freight" ? ["packageCount", "weight"] : []),
+  ];
+  const cargoFields = [
+    "cargo",
+    "weight",
+    "date",
+    ...(d.volume !== undefined ? ["volume"] : []),
+    ...(d.deliveryDate ? ["deliveryDate"] : []),
+  ];
+  const route =
+    routeFields.filter((k) => !first[k]).length / routeFields.length;
+  const cargo = cargoFields.filter((k) => !all[k]).length / cargoFields.length;
+  const services =
+    furthestStep >= 3
+      ? 1
+      : step === 2 &&
+          (d.services?.length || d.requirements?.trim() || notes.trim())
+        ? 0.5
+        : 0;
+  const review = furthestStep >= 3 && Object.keys(all).length === 0 ? 1 : 0;
+  const sections = [route, cargo, services, review];
+  return {
+    percent: Math.max(
+      0,
+      Math.min(100, Math.round(sections.reduce((a, b) => a + b, 0) * 25)),
+    ),
+    completed: sections.filter((n) => n === 1).length,
+  };
+}

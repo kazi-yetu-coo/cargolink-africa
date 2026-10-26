@@ -1,3 +1,4 @@
+export type WorkspaceKind = "admin" | "customer" | "cfa" | "trucker";
 export type Role = "customer" | "provider" | "admin";
 export type Company = {
   id: string;
@@ -6,6 +7,7 @@ export type Company = {
   role: "shipper" | "agent" | "trucker";
   verification_status: string;
   suspended?: boolean;
+  review_owner_id?: string | null;
   country?: string;
   city?: string;
   services?: string[];
@@ -37,6 +39,7 @@ export type ShipmentDetails = {
   [key: string]: unknown;
 };
 export type RFQ = {
+  review_owner_id?: string | null;
   id: string;
   owner_id: string;
   company_id: string | null;
@@ -49,6 +52,7 @@ export type RFQ = {
   progress?: string;
 };
 export type Bid = {
+  review_owner_id?: string | null;
   id: string;
   rfq_id: string;
   provider_id: string;
@@ -79,6 +83,7 @@ export type Message = {
   created_at: string;
 };
 export type Notification = {
+  review_owner_id?: string | null;
   id: string;
   user_id: string;
   rfq_id: string | null;

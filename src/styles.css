@@ -4200,3 +4200,128 @@ tbody tr:hover td {
     top: 63px;
   }
 }
+.inquiry-progress {
+  border: 1px solid #dcebe5;
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin: 0 0 22px;
+}
+.inquiry-progress strong {
+  display: block;
+  font-size: 13px;
+  color: #244d40;
+}
+.inquiry-progress small {
+  display: block;
+  font-size: 11px;
+  margin-top: 5px;
+}
+.progress-value {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  color: var(--green);
+  font-family: Manrope, sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.inquiry-progress-track {
+  height: 7px;
+  border-radius: 7px;
+  background: #eaf1ee;
+  margin-top: 15px;
+  overflow: hidden;
+}
+.inquiry-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #0ca883, #00a3a0);
+  transition: width 0.3s ease;
+}
+.provider-kind-section {
+  padding: 15px;
+  background: #f5faf8;
+  border: 1px solid #daebe3;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.provider-kind-section .role-cards {
+  margin-bottom: 0;
+}
+.provider-kind strong {
+  line-height: 1.6;
+}
+.workspace-switcher {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  position: relative;
+}
+.workspace-switcher label {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  color: #36816b;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.workspace-switcher select {
+  min-height: 34px;
+  max-width: 200px;
+  font-size: 10px;
+  padding: 7px 10px;
+  background: #f3faf7;
+  border-color: #cce2d8;
+}
+.workspace-switcher > small {
+  position: absolute;
+  right: 0;
+  top: 40px;
+  padding: 10px;
+  background: #fff1ed;
+  color: #a64636;
+  z-index: 80;
+  max-width: 270px;
+}
+@media (max-width: 1000px) {
+  .workspace-switcher label span,
+  .workspace-switcher ~ .live-label {
+    display: none;
+  }
+}
+@media (max-width: 560px) {
+  .inquiry-progress {
+    padding: 16px;
+  }
+  .inquiry-progress small {
+    font-size: 10px;
+  }
+  .inquiry-progress .between {
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .progress-value {
+    font-size: 18px;
+  }
+  .provider-kind {
+    flex-direction: column;
+  }
+  .workspace-switcher select {
+    max-width: 155px;
+    font-size: 9px;
+    min-height: 34px;
+  }
+  .workspace-switcher {
+    gap: 5px;
+  }
+  .workspace-switcher label {
+    display: none;
+  }
+  .dashboard-header:has(.workspace-switcher) .header-crumb > span,
+  .dashboard-header:has(.workspace-switcher) .header-crumb > svg {
+    display: none;
+  }
+}

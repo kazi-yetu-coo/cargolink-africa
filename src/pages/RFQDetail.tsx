@@ -52,7 +52,7 @@ export function RFQDetail({
   compare?: boolean;
 }) {
   const { id } = useParams(),
-    { user, role } = useAuth(),
+    { user, role, company, isReview } = useAuth(),
     navigate = useNavigate();
   const [tab, setTab] = useState(compare ? "quotes" : "details"),
     [selected, setSelected] = useState<string[]>([]),
@@ -78,15 +78,15 @@ export function RFQDetail({
         }[],
       };
     }
+    let bidQuery = supabase
+      .from("bids")
+      .select("*,companies(name,verification_status)")
+      .eq("rfq_id", id)
+      .order("created_at");
+    if (role === "provider") bidQuery = bidQuery.eq("company_id", company?.id);
     const [r, b, events] = await Promise.all([
       checked(supabase.from("rfqs").select("*").eq("id", id).single()),
-      checked(
-        supabase
-          .from("bids")
-          .select("*,companies(name,verification_status)")
-          .eq("rfq_id", id)
-          .order("created_at"),
-      ),
+      checked(bidQuery),
       checked(
         supabase
           .from("shipment_events")
@@ -96,7 +96,7 @@ export function RFQDetail({
       ),
     ]);
     return { rfq: r as RFQ, bids: b as Bid[], events: events || [] };
-  }, [demo, id]);
+  }, [demo, id, role, company?.id]);
   const { data, error: loadError, loading, reload } = useLoad(loader);
   if (loading) return <Loading />;
   if (loadError || !data)
@@ -108,8 +108,12 @@ export function RFQDetail({
     );
   const r = data.rfq,
     bids = data.bids,
-    owner = demo || r.owner_id === user?.id,
-    myBid = bids.find((b) => b.provider_id === user?.id);
+    owner =
+      demo ||
+      (r.owner_id === user?.id && (!isReview || r.company_id === company?.id)),
+    myBid = bids.find(
+      (b) => b.provider_id === user?.id && b.company_id === company?.id,
+    );
   const comparison = bids.filter((b) => selected.includes(b.id));
   async function awardBid() {
     if (!award) return;
@@ -678,7 +682,7 @@ function GlobeRoute() {
 }
 export function SubmitBid() {
   const { id } = useParams(),
-    { company, user } = useAuth(),
+    { company, user, isReview } = useAuth(),
     navigate = useNavigate();
   const [step, setStep] = useState(0),
     [currency, setCurrency] = useState("USD"),
@@ -723,8 +727,21 @@ export function SubmitBid() {
         />
       </Panel>
     );
-  if (r.owner_id === user?.id || r.status !== "open")
+  if (
+    (r.owner_id === user?.id && (!isReview || r.company_id === company?.id)) ||
+    r.status !== "open"
+  )
     return <Alert>This inquiry is not available for quoting.</Alert>;
+  if (
+    company?.role === "trucker" &&
+    !["Trucking", "Multimodal"].includes(r.service)
+  )
+    return (
+      <Alert>
+        This inquiry requires a CFA. Truck owners can quote on road and
+        multimodal shipments.
+      </Alert>
+    );
   const total = costTotal(costs);
   function next() {
     if (

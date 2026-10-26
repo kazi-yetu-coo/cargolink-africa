@@ -33,28 +33,30 @@ export function AuthPage({
   reset?: boolean;
   update?: boolean;
 }) {
-  const { user, company, role, loading, refresh } = useAuth(),
+  const { user, company, role, isAdmin, loading, refresh } = useAuth(),
     [search] = useSearchParams(),
     navigate = useNavigate();
   const [name, setName] = useState(""),
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [reveal, setReveal] = useState(false),
-    [accountRole, setAccountRole] = useState("shipper"),
+    [accountType, setAccountType] = useState("shipper"),
+    [providerKind, setProviderKind] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
   const next = search.get("next");
+  const accountRole = accountType === "shipper" ? "shipper" : providerKind;
   useEffect(() => {
-    if (user && company && !update && !reset) {
+    if (user && (company || isAdmin) && !update && !reset) {
       const safeNext =
         next?.startsWith("/") &&
         !next.startsWith("//") &&
         (!next.startsWith("/customer") || role === "customer");
       navigate(safeNext ? next! : `/${role}`, { replace: true });
-    } else if (user && !company && !update && !reset)
+    } else if (user && !company && !isAdmin && !update && !reset)
       navigate("/onboarding", { replace: true });
-  }, [user, company, role, next, navigate, update, reset]);
+  }, [user, company, role, isAdmin, next, navigate, update, reset]);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -78,13 +80,17 @@ export function AuthPage({
         return;
       }
       if (signup) {
+        if (accountType === "provider" && !providerKind)
+          throw new Error(
+            "Choose Truck Owner / Road Haulage or CFA to continue.",
+          );
         sessionStorage.setItem("cargolink-onboarding-role", accountRole);
         const data = await checked(
           supabase.auth.signUp({
             email,
             password,
             options: {
-              data: { full_name: name },
+              data: { full_name: name, requested_company_role: accountRole },
               emailRedirectTo: `${location.origin}/auth/callback`,
             },
           }),
@@ -144,6 +150,10 @@ export function AuthPage({
                 setBusy(true);
                 setError("");
                 try {
+                  if (signup && accountType === "provider" && !providerKind)
+                    throw new Error(
+                      "Choose Truck Owner / Road Haulage or CFA before continuing with Google.",
+                    );
                   if (signup)
                     sessionStorage.setItem(
                       "cargolink-onboarding-role",
@@ -232,7 +242,7 @@ export function AuthPage({
                 {[
                   ["shipper", "Cargo owner", "I need to move cargo", Box],
                   [
-                    "agent",
+                    "provider",
                     "Service provider",
                     "I offer logistics services",
                     Truck,
@@ -243,8 +253,11 @@ export function AuthPage({
                     <button
                       type="button"
                       key={String(v)}
-                      className={accountRole === v ? "selected" : ""}
-                      onClick={() => setAccountRole(String(v))}
+                      className={accountType === v ? "selected" : ""}
+                      onClick={() => {
+                        setAccountType(String(v));
+                        setError("");
+                      }}
                     >
                       <Icon size={19} />
                       <strong>{String(t)}</strong>
@@ -254,6 +267,46 @@ export function AuthPage({
                 })}
               </div>
             </>
+          )}
+          {signup && accountType === "provider" && (
+            <div className="provider-kind-section">
+              <label className="standalone-label">
+                What type of service provider are you? *
+              </label>
+              <div
+                className="role-cards provider-kind"
+                role="group"
+                aria-label="Service provider type"
+              >
+                {[
+                  [
+                    "trucker",
+                    "Truck Owner / Road Haulage",
+                    "I own or operate trucks",
+                  ],
+                  [
+                    "agent",
+                    "Clearing & Forwarding Agent (CFA)",
+                    "I arrange freight and customs clearance",
+                  ],
+                ].map(([value, title, description]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={providerKind === value}
+                    className={providerKind === value ? "selected" : ""}
+                    onClick={() => {
+                      setProviderKind(value);
+                      setError("");
+                    }}
+                  >
+                    <Truck size={20} />
+                    <strong>{title}</strong>
+                    <small>{description}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
           {error && <Alert>{error}</Alert>}
           {success && <Alert tone="success">{success}</Alert>}
@@ -327,11 +380,13 @@ export function AuthPage({
   );
 }
 export function AuthCallback() {
-  const { user, loading, error, company, role } = useAuth();
+  const { user, loading, error, company, role, isAdmin } = useAuth();
   if (loading) return <Loading />;
   if (error) return <Alert>{error}</Alert>;
   if (user)
-    return <Navigate to={company ? `/${role}` : "/onboarding"} replace />;
+    return (
+      <Navigate to={company || isAdmin ? `/${role}` : "/onboarding"} replace />
+    );
   return (
     <div className="narrow">
       <Alert>We could not complete sign-in. The link may have expired.</Alert>
@@ -352,6 +407,12 @@ export function Onboarding() {
     [city, setCity] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const preferred =
+      sessionStorage.getItem("cargolink-onboarding-role") ||
+      user?.user_metadata?.requested_company_role;
+    if (["shipper", "agent", "trucker"].includes(preferred)) setKind(preferred);
+  }, [user?.id, user?.user_metadata?.requested_company_role]);
   if (loading) return <Loading />;
   if (!user) return <Navigate to="/auth/sign-in" replace />;
   if (company) return <Navigate to={`/${role}`} replace />;
@@ -375,8 +436,8 @@ export function Onboarding() {
             <div className="role-cards">
               {[
                 ["shipper", "Cargo owner"],
-                ["agent", "Freight forwarder / clearing agent"],
-                ["trucker", "Trucking company"],
+                ["agent", "Clearing & Forwarding Agent (CFA)"],
+                ["trucker", "Truck Owner / Road Haulage"],
               ].map(([v, t]) => (
                 <button
                   key={v}

@@ -29,6 +29,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
+import { WorkspaceSwitcher } from "./workspace-switcher";
 import { useAuth } from "../lib/auth";
 import type { Role } from "../lib/types";
 import { Alert, Button, ButtonLink, Loading, Logo } from "./ui";
@@ -106,7 +107,7 @@ export function AuthLayout() {
   );
 }
 export function Protected({ allow }: { allow: Role[] }) {
-  const { user, company, role, loading, error, refresh } = useAuth();
+  const { user, company, role, isAdmin, loading, error, refresh } = useAuth();
   const location = useLocation();
   if (loading) return <Loading />;
   if (error)
@@ -132,14 +133,13 @@ export function Protected({ allow }: { allow: Role[] }) {
         <ButtonLink to="/contact">Contact support</ButtonLink>
       </div>
     );
-  if (!company && role !== "admin")
-    return <Navigate to="/onboarding" replace />;
+  if (!company && !isAdmin) return <Navigate to="/onboarding" replace />;
   if (!allow.includes(role)) return <Navigate to={`/${role}`} replace />;
   return <Outlet />;
 }
 export function DashboardLayout({ role }: { role: Role }) {
   const [open, setOpen] = useState(false);
-  const { company, user, signOut } = useAuth();
+  const { company, user, signOut, isReview } = useAuth();
   const navigate = useNavigate();
   const base = `/${role}`;
   const links =
@@ -266,6 +266,7 @@ export function DashboardLayout({ role }: { role: Role }) {
             <strong>CargoLink workspace</strong>
           </div>
           <div className="actions">
+            <WorkspaceSwitcher />
             <span className="live-label">
               <span />
               Live workspace
@@ -287,6 +288,14 @@ export function DashboardLayout({ role }: { role: Role }) {
           </div>
         </header>
         <main className="dashboard-main">
+          {isReview && (
+            <Alert tone="info">
+              <strong>Admin review workspace.</strong> Your actions use a
+              separate review company. Review inquiries and quotations are
+              private to your administrator account and do not enter the live
+              marketplace.
+            </Alert>
+          )}
           <Outlet />
         </main>
         <footer className="dashboard-footer">

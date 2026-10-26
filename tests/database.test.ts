@@ -36,6 +36,13 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  for (const migration of [
+    "20261026160747_admin_review_workspace_schema.sql",
+    "20261026160813_admin_review_workspace_access.sql",
+    "20261026160837_admin_review_workspace_workflows.sql",
+  ]) {
+    await db.exec(readFileSync(`supabase/migrations/${migration}`, "utf8"));
+  }
   await db.query("insert into auth.users(id) select unnest($1::uuid[])", [
     Object.values(ids),
   ]);
@@ -434,5 +441,178 @@ describe("Mode-specific database validation", () => {
         "select public.save_rfq(null,'Customs Clearance','{}','',false)",
       ),
     ).rejects.toThrow(/Clearing agents/);
+  });
+});
+
+describe("Administrator review workspaces", () => {
+  let customerCompany = "",
+    cfaCompany = "",
+    truckCompany = "",
+    reviewRfq = "",
+    reviewBid = "",
+    realRfq = "";
+  const detail = {
+    origin: { name: "Shanghai", type: "Port", country: "China" },
+    destination: { name: "Dar es Salaam", type: "Port", country: "Tanzania" },
+    scope: "Port to port",
+    containers: "40ft container",
+    quantity: 1,
+    cargo: "Review cargo",
+    weight: 1000,
+    date: "2099-01-01",
+  };
+  it("rejects ordinary users attempting admin role switching", async () => {
+    await as(ids.owner);
+    await expect(
+      db.query("select public.switch_admin_workspace('cfa')"),
+    ).rejects.toThrow(/Administrator only/);
+    await expect(
+      db.query(
+        "insert into public.admin_workspace_preferences(user_id,workspace) values(auth.uid(),'cfa')",
+      ),
+    ).rejects.toThrow();
+    const context = (await value("select public.get_workspace_context()")) as {
+      is_admin: boolean;
+      company: { id: string };
+    };
+    expect(context.is_admin).toBe(false);
+    expect(context.company.id).toBe(ownerCompany);
+  });
+  it("creates reusable private workspaces for each admin role", async () => {
+    await as(ids.admin);
+    const a = (await value(
+      "select public.switch_admin_workspace('customer')",
+    )) as {
+      company: { id: string; role: string; review_owner_id: string };
+      role: string;
+    };
+    customerCompany = a.company.id;
+    expect(a.role).toBe("customer");
+    expect(a.company.role).toBe("shipper");
+    expect(a.company.review_owner_id).toBe(ids.admin);
+    const again = (await value(
+      "select public.switch_admin_workspace('customer')",
+    )) as { company: { id: string } };
+    expect(again.company.id).toBe(customerCompany);
+    reviewRfq = (await value(
+      "select public.save_rfq(null,'Ocean Freight',$1::jsonb,'',true)",
+      [JSON.stringify(detail)],
+    )) as string;
+    expect(
+      await value("select review_owner_id from public.rfqs where id=$1", [
+        reviewRfq,
+      ]),
+    ).toBe(ids.admin);
+  });
+  it("hides review companies and inquiries from public and regular users", async () => {
+    await as(ids.provider);
+    expect(
+      await value("select count(*) from public.rfqs where id=$1", [reviewRfq]),
+    ).toBe(0);
+    expect(
+      await value("select count(*) from public.companies where id=$1", [
+        customerCompany,
+      ]),
+    ).toBe(0);
+    await db.exec(
+      "reset role;select set_config('request.jwt.claim.sub','',false);set role anon",
+    );
+    expect(
+      await value(
+        "select count(*) from public.companies where review_owner_id is not null",
+      ),
+    ).toBe(0);
+  });
+  it("allows a review CFA to quote on its administrator’s review inquiry", async () => {
+    await as(ids.admin);
+    const ctx = (await value(
+      "select public.switch_admin_workspace('cfa')",
+    )) as { company: { id: string; role: string }; role: string };
+    cfaCompany = ctx.company.id;
+    expect(ctx.role).toBe("provider");
+    expect(ctx.company.role).toBe("agent");
+    reviewBid = (await value(
+      "insert into public.bids(rfq_id,provider_id,company_id,currency,amount,transit_days,scope,valid_until) values($1,auth.uid(),$2,'USD',3400,20,'Port to port','2099-01-30') returning id",
+      [reviewRfq, cfaCompany],
+    )) as string;
+    expect(
+      await value("select review_owner_id from public.bids where id=$1", [
+        reviewBid,
+      ]),
+    ).toBe(ids.admin);
+  });
+  it("blocks crossing between review and live marketplace bids", async () => {
+    await as(ids.owner);
+    realRfq = (await value(
+      "select public.save_rfq(null,'Ocean Freight',$1::jsonb,'',true)",
+      [JSON.stringify(detail)],
+    )) as string;
+    await as(ids.admin);
+    await expect(
+      db.query(
+        "insert into public.bids(rfq_id,provider_id,company_id,currency,amount,transit_days) values($1,auth.uid(),$2,'USD',100,2)",
+        [realRfq, cfaCompany],
+      ),
+    ).rejects.toThrow();
+    await as(ids.provider);
+    await expect(
+      db.query(
+        "insert into public.bids(rfq_id,provider_id,company_id,currency,amount,transit_days) values($1,auth.uid(),$2,'USD',100,2)",
+        [reviewRfq, providerCompany],
+      ),
+    ).rejects.toThrow();
+  });
+  it("enforces truck-owner eligibility and active company on the server", async () => {
+    await as(ids.admin);
+    const ctx = (await value(
+      "select public.switch_admin_workspace('trucker')",
+    )) as { company: { id: string; role: string } };
+    truckCompany = ctx.company.id;
+    expect(ctx.company.role).toBe("trucker");
+    await expect(
+      db.query(
+        "insert into public.bids(rfq_id,provider_id,company_id,currency,amount,transit_days) values($1,auth.uid(),$2,'USD',100,2)",
+        [reviewRfq, truckCompany],
+      ),
+    ).rejects.toThrow();
+    await expect(
+      db.query("select public.award_bid($1,$2)", [reviewRfq, reviewBid]),
+    ).rejects.toThrow();
+    await expect(
+      db.query(
+        "select public.save_rfq(null,'Ocean Freight',$1::jsonb,'',true)",
+        [JSON.stringify(detail)],
+      ),
+    ).rejects.toThrow();
+  });
+  it("completes review award and milestone flows under the correct role", async () => {
+    await as(ids.admin);
+    await value("select public.switch_admin_workspace('customer')");
+    await db.query("select public.award_bid($1,$2)", [reviewRfq, reviewBid]);
+    await value("select public.switch_admin_workspace('trucker')");
+    await expect(
+      db.query("select public.update_shipment($1,'In transit','')", [
+        reviewRfq,
+      ]),
+    ).rejects.toThrow();
+    await value("select public.switch_admin_workspace('cfa')");
+    await db.query(
+      "select public.update_shipment($1,'In transit','Review milestone')",
+      [reviewRfq],
+    );
+    expect(
+      await value("select progress from public.rfqs where id=$1", [reviewRfq]),
+    ).toBe("In transit");
+  });
+  it("keeps normal role identity intact and returns to the admin console", async () => {
+    await as(ids.owner);
+    expect(await value("select public.active_company_id()")).toBe(ownerCompany);
+    await as(ids.admin);
+    const ctx = (await value(
+      "select public.switch_admin_workspace('admin')",
+    )) as { role: string; is_admin: boolean; workspace: string };
+    expect(ctx.role).toBe("admin");
+    expect(ctx.is_admin).toBe(true);
+    expect(ctx.workspace).toBe("admin");
   });
 });

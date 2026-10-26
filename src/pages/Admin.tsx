@@ -43,14 +43,17 @@ type SupportRow = {
 export function AdminDashboard() {
   const loader = useCallback(async () => {
     const [companies, rfqs, bids, requests] = await Promise.all([
-      checked(supabase.from("companies").select("*")),
+      checked(
+        supabase.from("companies").select("*").is("review_owner_id", null),
+      ),
       checked(
         supabase
           .from("rfqs")
           .select("*")
+          .is("review_owner_id", null)
           .order("created_at", { ascending: false }),
       ),
-      checked(supabase.from("bids").select("*")),
+      checked(supabase.from("bids").select("*").is("review_owner_id", null)),
       checked(
         supabase
           .from("verification_requests")
@@ -62,7 +65,9 @@ export function AdminDashboard() {
       companies: companies as Company[],
       rfqs: rfqs as RFQ[],
       bids: bids as Bid[],
-      requests: requests as Verification[],
+      requests: (requests as Verification[]).filter((r) =>
+        companies?.some((c) => c.id === r.company_id),
+      ),
     };
   }, []);
   const { data, error, loading } = useLoad(loader);
@@ -461,6 +466,7 @@ export function AdminAccounts() {
         supabase
           .from("companies")
           .select("*")
+          .is("review_owner_id", null)
           .order("created_at", { ascending: false }),
       )) as Company[],
     [],
@@ -601,6 +607,7 @@ export function AdminRecords() {
         supabase
           .from("rfqs")
           .select("*")
+          .is("review_owner_id", null)
           .order("created_at", { ascending: false }),
       )) as RFQ[],
     [],

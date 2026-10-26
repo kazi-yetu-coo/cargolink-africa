@@ -25,6 +25,7 @@ import {
   Stepper,
   TextArea,
 } from "../components/ui";
+import { InquiryProgress } from "../components/inquiry-progress";
 import { useAuth } from "../lib/auth";
 import { checked, supabase } from "../lib/supabase";
 import {
@@ -46,6 +47,7 @@ function stored() {
       notes?: string;
       entryStepCompleted?: boolean;
       resumeStep?: number;
+      furthestStep?: number;
     };
   } catch {
     return {};
@@ -53,7 +55,7 @@ function stored() {
 }
 export function RFQEditor() {
   const { id } = useParams(),
-    { user, company, role } = useAuth(),
+    { user, company, role, isReview } = useAuth(),
     navigate = useNavigate();
   const [initial] = useState(stored);
   const [service, setService] = useState(initial.service || "Ocean Freight"),
@@ -81,6 +83,11 @@ export function RFQEditor() {
             ),
           ),
     ),
+    [furthestStep, setFurthestStep] = useState(
+      initial.furthestStep ??
+        initial.resumeStep ??
+        (initial.entryStepCompleted ? 1 : 0),
+    ),
     [errors, setErrors] = useState<Record<string, string>>({}),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -92,7 +99,7 @@ export function RFQEditor() {
       const r = (await checked(
         supabase.from("rfqs").select("*").eq("id", id).single(),
       )) as RFQ;
-      if (r.owner_id !== user?.id)
+      if (r.owner_id !== user?.id || (isReview && r.company_id !== company?.id))
         throw new Error("Only the cargo owner can edit this inquiry.");
       setService(r.service);
       setDetails(r.details);
@@ -103,7 +110,7 @@ export function RFQEditor() {
     } finally {
       setLoading(false);
     }
-  }, [id, user?.id]);
+  }, [id, user?.id, isReview, company?.id]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -117,9 +124,18 @@ export function RFQEditor() {
           notes,
           entryStepCompleted: initial.entryStepCompleted,
           resumeStep: step,
+          furthestStep,
         }),
       );
-  }, [service, details, notes, id, step, initial.entryStepCompleted]);
+  }, [
+    service,
+    details,
+    notes,
+    id,
+    step,
+    furthestStep,
+    initial.entryStepCompleted,
+  ]);
   function set<K extends keyof ShipmentDetails>(k: K, v: ShipmentDetails[K]) {
     setDetails((d) => ({ ...d, [k]: v }));
     setErrors((e) => ({ ...e, [k]: "" }));
@@ -153,6 +169,7 @@ export function RFQEditor() {
     );
     setErrors(filtered);
     if (!Object.keys(filtered).length) {
+      setFurthestStep((previous) => Math.max(previous, step + 1));
       setStep((s) => s + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -187,6 +204,7 @@ export function RFQEditor() {
           notes,
           entryStepCompleted: initial.entryStepCompleted,
           resumeStep: step,
+          furthestStep,
         }),
       );
       navigate("/auth/sign-in?next=%2Fcustomer%2Frfqs%2Fnew");
@@ -265,6 +283,13 @@ export function RFQEditor() {
         </Alert>
       )}
       {error && <Alert>{error}</Alert>}
+      <InquiryProgress
+        details={details}
+        service={service}
+        step={step}
+        notes={notes}
+        furthestStep={furthestStep}
+      />
       <Panel className="wizard-panel">
         <aside>
           <Stepper steps={shipmentSteps(service)} current={step} />

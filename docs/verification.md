@@ -4,7 +4,7 @@
 
 - `npm run lint`: passed, no warnings/errors.
 - `npm run typecheck`: passed for application, API and unit test source.
-- `npm test`: 36 tests passed in two suites. No test records retained and no paid AI requests.
+- `npm test`: 47 tests passed in two suites. No test records retained and no paid AI requests.
 - `npm run build`: passed; Vite production assets generated successfully, with routes split into separate page modules.
 - `npm audit --omit=dev --audit-level=high`: zero vulnerabilities reported.
 - A CI activation template is supplied in `docs/ci-workflow.yml`. The GitHub connection lacks workflow scope, so it has not been installed or run remotely; local checks passed.
@@ -59,8 +59,17 @@ A hosted transaction-only test created temporary test identities, set authentica
 
 Browser checks verify sea door addresses/equipment, air airports/package count/weight with no sea equipment, and trucking city plus custom address entry. Homepage completion opens the success banner at step 2 with mode-specific progress labels. Mobile trucking form and the handoff have a 390px document width at a 390px viewport. The first-step data, including 12 air packages and 240kg, is preserved through navigation. An empty trucking delivery address is blocked before advancing.
 
-Remaining service configuration: Google OAuth is disabled, there is no designated administrator, and no AI key has been provisioned. The production frontend is not promoted. The existing Vercel protection remains enabled on review previews. Hosted Auth sign-in/sign-up, actual storage uploads and paid AI responses still need disposable staging-account verification.
+Remaining service configuration: Google OAuth is disabled, administrator access is provisioned, and no AI key has been provisioned. The production frontend is not promoted. The existing Vercel protection remains enabled on review previews. Hosted Auth sign-in/sign-up, actual storage uploads and paid AI responses still need disposable staging-account verification.
 
 ## Database advisory review
 
 The anonymous trigger-function execution warnings were removed by the upgrade. Remaining authenticated security-definer notices are expected for explicitly guarded ownership/admin workflow RPCs and policy helpers; inspect [Supabase's function execution advisory](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable). The assistant usage ledger deliberately has no client policies and no client table grants; only the guarded rate-limit function accesses it. See [the RLS-policy advisory](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy). Supabase's existing leaked-password protection setting remains disabled and is an operator configuration dependency: [password protection setup](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+## Inquiry progress, provider choice and admin review
+
+- Field-based inquiry progress advances within each section, completes optional services when visited, reaches Ready to submit at review and retains visited-section progress when going back. It does not claim the inquiry is published.
+- Service provider registration requires Truck Owner / Road Haulage or Clearing & Forwarding Agent (CFA), preserves the preference through confirmation/onboarding and uses normal database registration checks.
+- Eight new database cases cover switching denial for normal users, private workspace reuse and isolation, same-account private quotes, review/live bid separation, truck eligibility, active-company enforcement, award and milestone transitions, and return to admin. Three unit cases cover progress.
+- The connected database passed customer review creation → CFA quotation → customer award → CFA milestone → admin return. The transaction was rolled back, retaining no smoke-test records.
+
+Browser verification observed progress at 0%, 8% after one location, 25% after route/equipment, 50% after cargo/schedule, 63% after an optional service and 100% at review. Registration visibly reveals both required provider choices. No account or live inquiry was submitted in these public browser checks.

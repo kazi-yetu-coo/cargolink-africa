@@ -69,3 +69,5 @@ All routes are defined in `src/App.tsx`. Public/auth/customer/provider/admin lay
 | Server | `POST /api/inquiry` | Session-verified, rate-limited structured AI inquiry |
 
 Protected areas require an authenticated user, completed company onboarding and the appropriate role. Suspended companies receive an access notice. Administrators are assigned through the database, not the sign-up form.
+
+Authorized administrators use the **Admin workspace** header selector to open the existing customer/provider routes as private Cargo Owner, CFA or Truck Owner review companies. The route guard follows the effective workspace role; server-side checks remain authoritative.

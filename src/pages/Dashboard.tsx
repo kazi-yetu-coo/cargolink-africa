@@ -12,6 +12,7 @@ import {
   Truck,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { recordScope } from "../lib/review";
 import { useAuth } from "../lib/auth";
 import { checked, supabase } from "../lib/supabase";
 import { useLoad } from "../lib/hooks";
@@ -97,7 +98,7 @@ export function RFQTable({
   );
 }
 export function Dashboard({ demo = false }: { demo?: boolean }) {
-  const { user, company, role } = useAuth();
+  const { user, company, role, isReview } = useAuth();
   const base = demo ? "/demo" : `/${role}`;
   const [tracking, setTracking] = useState(""),
     [trackingError, setTrackingError] = useState("");
@@ -109,18 +110,22 @@ export function Dashboard({ demo = false }: { demo?: boolean }) {
       .from("rfqs")
       .select("*")
       .order("created_at", { ascending: false });
+    q = recordScope(q, isReview, user.id);
     if (role === "customer") q = q.eq("owner_id", user.id);
-    const [rfqs, bids] = await Promise.all([
-      checked(q),
-      checked(
-        supabase
-          .from("bids")
-          .select("*,companies(name,verification_status)")
-          .order("created_at", { ascending: false }),
-      ),
-    ]);
+    if (isReview && role === "provider" && company?.role === "trucker")
+      q = q.in("service", ["Trucking", "Multimodal"]);
+    let bidQuery = recordScope(
+      supabase
+        .from("bids")
+        .select("*,companies(name,verification_status)")
+        .order("created_at", { ascending: false }),
+      isReview,
+      user.id,
+    );
+    if (role === "provider") bidQuery = bidQuery.eq("company_id", company?.id);
+    const [rfqs, bids] = await Promise.all([checked(q), checked(bidQuery)]);
     return { rfqs: rfqs as RFQ[], bids: bids as Bid[] };
-  }, [demo, user, role]);
+  }, [demo, user, role, isReview, company?.id, company?.role]);
   const { data, error, loading, reload } = useLoad(loader);
   if (loading) return <Loading />;
   if (error)
@@ -342,7 +347,7 @@ export function RFQList({
   market?: boolean;
   demo?: boolean;
 }) {
-  const { user, role } = useAuth();
+  const { user, role, company, isReview } = useAuth();
   const [search, setSearch] = useState(""),
     [status, setStatus] = useState("all"),
     [service, setService] = useState("all");
@@ -352,10 +357,13 @@ export function RFQList({
       .from("rfqs")
       .select("*")
       .order("created_at", { ascending: false });
+    q = recordScope(q, isReview, user?.id);
+    if (isReview && market && company?.role === "trucker")
+      q = q.in("service", ["Trucking", "Multimodal"]);
     if (market) q = q.eq("status", "open");
     else q = q.eq("owner_id", user?.id);
     return (await checked(q)) as RFQ[];
-  }, [demo, market, user?.id]);
+  }, [demo, market, user?.id, isReview, company?.role]);
   const { data, error, loading, reload } = useLoad(loader);
   const rows = (data || []).filter(
     (r) =>
@@ -438,23 +446,33 @@ export function RFQList({
         )}
         <div className="table-footer">
           {rows.length} {rows.length === 1 ? "inquiry" : "inquiries"} ·{" "}
-          {demo ? "Sample records" : "Live records"}
+          {demo
+            ? "Sample records"
+            : isReview
+              ? "Private review records"
+              : "Live records"}
         </div>
       </Panel>
     </>
   );
 }
 export function QuotesList() {
-  const { user, role } = useAuth();
+  const { user, role, company, isReview } = useAuth();
   const loader = useCallback(async () => {
-    const q = supabase
-      .from("bids")
-      .select("*,companies(name,verification_status)")
-      .order("created_at", { ascending: false });
+    const q = recordScope(
+      supabase
+        .from("bids")
+        .select("*,companies(name,verification_status)")
+        .order("created_at", { ascending: false }),
+      isReview,
+      user?.id,
+    );
     return (await checked(
-      role === "provider" ? q.eq("provider_id", user?.id) : q,
+      role === "provider"
+        ? q.eq("provider_id", user?.id).eq("company_id", company?.id)
+        : q,
     )) as Bid[];
-  }, [user?.id, role]);
+  }, [user?.id, role, isReview, company?.id]);
   const { data, error, loading } = useLoad(loader);
   return (
     <>
@@ -537,13 +555,14 @@ export function QuotesList() {
   );
 }
 export function Shipments() {
-  const { user, role } = useAuth();
+  const { user, role, company, isReview } = useAuth();
   const loader = useCallback(async () => {
     let q = supabase
       .from("rfqs")
       .select("*")
       .in("status", ["awarded", "completed"])
       .order("created_at", { ascending: false });
+    q = recordScope(q, isReview, user?.id);
     if (role === "customer") q = q.eq("owner_id", user?.id);
     const rows = (await checked(q)) as RFQ[];
     if (role === "provider") {
@@ -551,13 +570,14 @@ export function Shipments() {
         supabase
           .from("bids")
           .select("rfq_id")
+          .eq("company_id", company?.id)
           .eq("provider_id", user?.id)
           .eq("status", "awarded"),
       );
       return rows.filter((r) => bids?.some((b) => b.rfq_id === r.id));
     }
     return rows;
-  }, [user?.id, role]);
+  }, [user?.id, role, isReview, company?.id]);
   const { data, error, loading } = useLoad(loader);
   return (
     <>
@@ -613,7 +633,7 @@ export function Providers({
   saved?: boolean;
   demo?: boolean;
 }) {
-  const { user } = useAuth();
+  const { user, isReview } = useAuth();
   const [search, setSearch] = useState(""),
     [feedback, setFeedback] = useState("");
   const loader = useCallback(async () => {
@@ -627,23 +647,31 @@ export function Providers({
       );
       if (!records?.length) return [];
       return (await checked(
-        supabase
-          .from("companies")
-          .select("*")
-          .in(
-            "id",
-            records.map((r) => r.company_id),
-          ),
+        recordScope(
+          supabase
+            .from("companies")
+            .select("*")
+            .in(
+              "id",
+              records.map((r) => r.company_id),
+            ),
+          isReview,
+          user?.id,
+        ),
       )) as Company[];
     }
     return (await checked(
-      supabase
-        .from("companies")
-        .select("*")
-        .eq("verification_status", "verified")
-        .eq("suspended", false),
+      recordScope(
+        supabase
+          .from("companies")
+          .select("*")
+          .eq("verification_status", "verified")
+          .eq("suspended", false),
+        isReview,
+        user?.id,
+      ),
     )) as Company[];
-  }, [demo, saved, user?.id]);
+  }, [demo, saved, user?.id, isReview]);
   const { data, error, loading, reload } = useLoad(loader);
   return (
     <>
