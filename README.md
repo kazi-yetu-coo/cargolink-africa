@@ -47,7 +47,7 @@ See [the complete route inventory](docs/routes.md). Browser history routes requi
 
 ## Database architecture
 
-The additive migrations are `supabase/migrations/20261026135933_marketplace_workflows.sql` and `supabase/migrations/20261026140803_transport_specific_inquiries.sql`. They target the **existing CargoLink schema** in project `iacahumfwacpknggqjtd`; it is not a fresh Supabase bootstrap. Do not deploy `tests/baseline.sql` to a real project: that file is an isolated in-memory test fixture with mock Auth and Storage schemas.
+The additive migrations are the five SQL files in `supabase/migrations/`: marketplace workflows, transport-specific inquiries and three administrator review workspace upgrades. All five are applied to the existing project. They target the **existing CargoLink schema** in project `iacahumfwacpknggqjtd`; it is not a fresh Supabase bootstrap. Do not deploy `tests/baseline.sql` to a real project: that file is an isolated in-memory test fixture with mock Auth and Storage schemas.
 
 Existing tables, auth identities and records are retained. The migration extends RFQs, quotations and company profiles; adds saved providers, shipment events, support, activity and assistant usage; fixes provider eligibility and award validation; adds private verification storage and guards workflow actions. All new tables enable RLS. Trigger functions are not directly callable by client roles. Privileged workflow functions explicitly check authenticated ownership or administrator membership and use an empty search path; their restricted `authenticated` execution grants are intentional.
 
