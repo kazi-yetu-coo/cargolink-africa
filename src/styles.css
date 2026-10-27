@@ -4325,3 +4325,420 @@ tbody tr:hover td {
     display: none;
   }
 }
+
+/* Compact, swipeable route carousel shared by the homepage and shipper workspace. */
+.popular-route-slider {
+  min-width: 0;
+  padding: 14px 0;
+}
+.quick-inquiry > .popular-route-slider {
+  padding: 12px 28px;
+  border-top: 1px solid var(--line);
+}
+.route-slider-heading,
+.route-slider-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.route-slider-heading {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.route-slider-heading strong {
+  font-size: 12px;
+}
+.route-slider-heading .icon-button {
+  width: 28px;
+  height: 28px;
+}
+.route-slider-track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  padding-bottom: 5px;
+}
+.route-chip {
+  flex: 0 0 235px;
+  justify-content: space-between;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border: 1px solid #dce9e5;
+  border-radius: 8px;
+  background: #f5faf8;
+  color: #234d47;
+  font-size: 12px;
+  scroll-snap-align: start;
+  cursor: pointer;
+}
+.route-chip:hover {
+  border-color: #09967d;
+  background: #e9f7f0;
+}
+.dashboard-routes {
+  margin-bottom: 24px;
+  min-width: 0;
+}
+.dashboard-routes .text-link {
+  font-size: 12px;
+}
+.truck-editor {
+  margin-bottom: 24px;
+}
+.truck-editor form {
+  display: grid;
+  gap: 18px;
+}
+.truck-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.truck-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.truck-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.truck-card h2 {
+  font-size: 20px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.truck-card h2 svg {
+  vertical-align: middle;
+}
+.truck-card p {
+  margin: 0;
+}
+.truck-facts {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+  border-block: 1px solid #edf1ef;
+  font-size: 13px;
+}
+.truck-facts span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.truck-card small {
+  color: #60766e;
+}
+.truck-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.truck-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 16px;
+}
+.google-attribution {
+  display: block;
+  text-align: right;
+  padding: 10px 14px;
+  color: #5f6368;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+}
+@media (max-width: 900px) {
+  .truck-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .truck-card-grid {
+    grid-template-columns: 1fr;
+  }
+  .quick-inquiry > .popular-route-slider {
+    padding: 12px 18px;
+  }
+  .truck-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+  .truck-form-actions .button {
+    flex: 1;
+  }
+  .dashboard-routes .between {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
+
+/* Benefits: illustrative product stories, with honest integration states. */
+.benefits-section {
+  background: #f4f8f7;
+  border-block: 1px solid #e4eeeb;
+}
+.benefits-section .section-heading h2 {
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 1.15;
+}
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+.benefit-card {
+  background: white;
+  border: 1px solid #dfe9e6;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.benefit-art {
+  height: 218px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 13px;
+  background: linear-gradient(145deg, #fff, #f4faf8);
+  border-bottom: 1px solid #e8efed;
+  color: #257b6d;
+  overflow: hidden;
+}
+.benefit-art > small {
+  font-size: 10px;
+  color: #7a8b85;
+  margin-top: auto;
+}
+.art-caption {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rate-demo {
+  display: grid;
+  grid-template-columns: 18px 58px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #526963;
+}
+.rate-demo i {
+  height: 10px;
+  background: #9fcfc2;
+  border-radius: 3px;
+}
+.rate-demo:nth-child(3) i {
+  background: #069b79;
+}
+.sample-bubble {
+  border-radius: 12px 12px 12px 2px;
+  background: #ddf3e9;
+  padding: 12px;
+  font-size: 12px;
+  color: #1b5749;
+  max-width: 95%;
+}
+.sample-extraction {
+  padding: 12px;
+  background: white;
+  border: 1px solid #d6e9e1;
+  border-radius: 10px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+  box-shadow: 0 5px 16px #164e3410;
+}
+.sample-extraction small,
+.sample-notice small {
+  display: block;
+  font-size: 9px;
+  color: #72877f;
+  margin-top: 4px;
+}
+.sample-notice {
+  padding: 14px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dfebe5;
+  background: white;
+  border-radius: 10px;
+  font-size: 11px;
+  box-shadow: 0 5px 16px #164e3410;
+}
+.sample-stages {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  margin-top: 15px;
+}
+.sample-stages i {
+  height: 2px;
+  background: #99d0be;
+  flex: 1;
+}
+.sample-document {
+  padding: 15px 20px;
+  box-shadow: 0 4px 14px #164e3410;
+  background: white;
+  border: 1px solid #e0eae7;
+  border-bottom: 3px solid #12a386;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-width: 200px;
+  width: 100%;
+  align-self: center;
+}
+.sample-document b {
+  font-size: 10px;
+}
+.sample-document span {
+  font-size: 9px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #71867e;
+}
+.benefit-copy {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.benefit-copy > span {
+  font-size: 10px;
+  color: #159a81;
+  letter-spacing: 0.08em;
+}
+.benefit-copy h3 {
+  font-size: 20px;
+  line-height: 1.3;
+  margin: 15px 0 10px;
+}
+.benefit-copy p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #677b74;
+  margin: 0 0 22px;
+}
+.benefit-copy a {
+  margin-top: auto;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #00836b;
+}
+.automation-page {
+  max-width: 900px;
+}
+.automation-page h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+.automation-page .panel {
+  padding: 28px;
+  margin-top: 24px;
+}
+.automation-page li {
+  margin: 14px 0;
+}
+.automation-page p {
+  line-height: 1.8;
+}
+.preparation-panel {
+  padding: 28px;
+  margin-top: 24px;
+}
+.preparation-panel h3 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.preparation-panel > p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #667d75;
+}
+.preparation-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 22px 0;
+}
+.preparation-items label,
+.preparation-consent {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid #e2ebe7;
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.preparation-items input,
+.preparation-consent input {
+  margin-top: 3px;
+  accent-color: #008c6e;
+}
+.preparation-items small,
+.preparation-consent small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #6d8079;
+}
+.preparation-consent {
+  margin: 18px 0;
+  background: #f3faf7;
+}
+.preparation-sources a {
+  text-decoration: underline;
+}
+@media (max-width: 1100px) {
+  .benefits-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .benefit-art {
+    height: 220px;
+    padding: 26px 32px;
+  }
+}
+@media (max-width: 600px) {
+  .benefits-grid,
+  .preparation-items {
+    grid-template-columns: 1fr;
+  }
+  .benefit-art {
+    height: 200px;
+  }
+  .benefit-copy {
+    padding: 22px;
+  }
+  .preparation-panel {
+    padding: 18px;
+  }
+  .preparation-panel .between {
+    align-items: flex-start;
+    gap: 8px;
+    flex-direction: column;
+  }
+}

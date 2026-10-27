@@ -109,6 +109,21 @@ const wholePositive = (n: unknown) =>
   Number.isInteger(Number(n)) && Number(n) > 0;
 export function validateFirstStep(d: ShipmentDetails, service: string) {
   const errors: Record<string, string> = {};
+  if (
+    service === "Trucking" &&
+    d.weight !== undefined &&
+    (!Number.isFinite(d.weight) || d.weight <= 0)
+  )
+    errors.weight = "Enter a positive gross weight.";
+  if (service === "Trucking" && d.origin && d.origin.name.trim().length < 3)
+    errors.origin = "Enter a pickup location with at least 3 characters.";
+  if (
+    service === "Trucking" &&
+    d.destination &&
+    d.destination.name.trim().length < 3
+  )
+    errors.destination =
+      "Enter a delivery location with at least 3 characters.";
   if (!d.origin)
     errors.origin = "Choose an origin location or enter a pickup address.";
   if (service === "Ocean Freight" && d.origin && d.origin.type !== "Port")

@@ -40,6 +40,8 @@ beforeAll(async () => {
     "20261026160747_admin_review_workspace_schema.sql",
     "20261026160813_admin_review_workspace_access.sql",
     "20261026160837_admin_review_workspace_workflows.sql",
+    "20261027112835_truck_availability_marketplace.sql",
+    "20261027112856_shipment_preparation.sql",
   ]) {
     await db.exec(readFileSync(`supabase/migrations/${migration}`, "utf8"));
   }
@@ -614,5 +616,168 @@ describe("Administrator review workspaces", () => {
     expect(ctx.role).toBe("admin");
     expect(ctx.is_admin).toBe(true);
     expect(ctx.workspace).toBe("admin");
+  });
+});
+
+describe("Truck availability and preparation", () => {
+  let listing = "",
+    targeted = "";
+  const route = {
+    origin: {
+      name: "Dar es Salaam",
+      country: "Tanzania",
+      type: "Address",
+      code: "",
+    },
+    destination: {
+      name: "Kigali",
+      country: "Rwanda",
+      type: "Address",
+      code: "",
+    },
+    truckType: "Flatbed",
+    capacityKg: 10000,
+    availableFrom: "2099-01-01",
+    availableUntil: "2099-01-10",
+  };
+  it("lets a verified truck owner publish capacity but rejects unrelated edits", async () => {
+    await db.exec("reset role");
+    await db.query(
+      "update public.companies set suspended=false,verification_status='verified' where owner_id=$1 and review_owner_id is null",
+      [ids.trucker],
+    );
+    await as(ids.trucker);
+    listing = (await value(
+      "select public.save_truck_listing(null,$1,'available')",
+      [JSON.stringify(route)],
+    )) as string;
+    expect(listing).toBeTruthy();
+    await as(ids.owner);
+    expect(
+      await value(
+        "select count(*)::int from public.truck_listings where id=$1",
+        [listing],
+      ),
+    ).toBe(1);
+    await expect(
+      db.query("select public.save_truck_listing($1,$2,'closed')", [
+        listing,
+        JSON.stringify(route),
+      ]),
+    ).rejects.toThrow();
+  });
+  it("checks capacity and sends a private quote request to the chosen truck company", async () => {
+    await as(ids.owner);
+    const details = {
+      ...route,
+      scope: "Door to door",
+      pickupAddress: "Dar es Salaam",
+      deliveryAddress: "Kigali",
+      cargo: "Palletized manufactured goods",
+      weight: 1000,
+      date: "2099-01-03",
+      truckListingId: listing,
+    };
+    await expect(
+      db.query("select public.save_rfq(null,'Trucking',$1,'',true)", [
+        JSON.stringify({ ...details, weight: 11000 }),
+      ]),
+    ).rejects.toThrow();
+    await expect(
+      db.query("select public.save_rfq(null,'Trucking',$1,'',true)", [
+        JSON.stringify({ ...details, date: "2099-02-01" }),
+      ]),
+    ).rejects.toThrow();
+    targeted = (await value(
+      "select public.save_rfq(null,'Trucking',$1,'',true)",
+      [JSON.stringify(details)],
+    )) as string;
+    await as(ids.provider);
+    expect(
+      await value("select count(*)::int from public.rfqs where id=$1", [
+        targeted,
+      ]),
+    ).toBe(0);
+    await expect(
+      db.query(
+        "insert into public.bids(rfq_id,provider_id,company_id,currency,amount,transit_days,freight_charges,customs_fees,inland_charges,other_charges) values($1,auth.uid(),$2,'USD',100,2,100,0,0,0)",
+        [targeted, providerCompany],
+      ),
+    ).rejects.toThrow();
+    await as(ids.trucker);
+    expect(
+      await value("select count(*)::int from public.rfqs where id=$1", [
+        targeted,
+      ]),
+    ).toBe(1);
+    expect(
+      await value(
+        "select count(*)::int from public.notifications where rfq_id=$1 and title='New truck quote request'",
+        [targeted],
+      ),
+    ).toBe(1);
+    const company = await value("select public.active_company_id()");
+    expect(
+      await value(
+        "insert into public.bids(rfq_id,provider_id,company_id,currency,amount,transit_days,freight_charges,customs_fees,inland_charges,other_charges) values($1,auth.uid(),$2,'USD',100,2,100,0,0,0) returning id",
+        [targeted, company],
+      ),
+    ).toBeTruthy();
+  });
+  it("persists checklist progress and consent only for the inquiry owner", async () => {
+    await as(ids.owner);
+    await db.query(
+      "select public.save_shipment_preparation($1,array['packing'],true)",
+      [targeted],
+    );
+    expect(
+      await value(
+        "select email_requested from public.shipment_preparation where rfq_id=$1",
+        [targeted],
+      ),
+    ).toBe(true);
+    await db.query(
+      "select public.save_shipment_preparation($1,array['packing','invoice'],false)",
+      [targeted],
+    );
+    expect(
+      await value(
+        "select email_requested from public.shipment_preparation where rfq_id=$1",
+        [targeted],
+      ),
+    ).toBe(false);
+    await as(ids.trucker);
+    expect(
+      await value(
+        "select count(*)::int from public.shipment_preparation where rfq_id=$1",
+        [targeted],
+      ),
+    ).toBe(0);
+    await expect(
+      db.query(
+        "select public.save_shipment_preparation($1,array[]::text[],true)",
+        [targeted],
+      ),
+    ).rejects.toThrow();
+  });
+  it("hides closed listings from shippers and blocks direct listing mutations", async () => {
+    await as(ids.trucker);
+    await db.query("select public.save_truck_listing($1,$2,'closed')", [
+      listing,
+      JSON.stringify(route),
+    ]);
+    await expect(
+      db.query(
+        "update public.truck_listings set status='available' where id=$1",
+        [listing],
+      ),
+    ).rejects.toThrow();
+    await as(ids.owner);
+    expect(
+      await value(
+        "select count(*)::int from public.truck_listings where id=$1",
+        [listing],
+      ),
+    ).toBe(0);
   });
 });

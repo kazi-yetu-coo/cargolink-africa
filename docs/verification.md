@@ -73,3 +73,13 @@ The anonymous trigger-function execution warnings were removed by the upgrade. R
 - The connected database passed customer review creation → CFA quotation → customer award → CFA milestone → admin return. The transaction was rolled back, retaining no smoke-test records.
 
 Browser verification observed progress at 0%, 8% after one location, 25% after route/equipment, 50% after cargo/schedule, 63% after an optional service and 100% at review. Registration visibly reveals both required provider choices. No account or live inquiry was submitted in these public browser checks.
+
+## Truck availability, benefits and preparation — 27 October 2026
+
+- 51 local tests passed. New database coverage: truck owner publishing, unrelated edit rejection, shipper browsing, capacity/date rejection, private targeted RFQ visibility, unrelated bid rejection, selected truck bid acceptance, quote-request notification, preparation persistence/consent withdrawal/owner isolation, closed-listing hiding and direct mutation rejection.
+- TypeScript, ESLint (no warnings), and production build passed.
+- Browser checked homepage at 1440px, 768px and 390px: document width equals viewport, no page-level horizontal overflow. Route slider controls scroll; reduced-motion and pause controls are implemented.
+- Browser entered two unmatched road addresses, weight and packaging; Get quotations moved to step 2 with first-step success and retained weight. Found and fixed an input handler error during verification; rechecked successfully.
+- Benefits section screenshot saved in handoff outputs. All decorative comparisons/chats are labeled illustrative, and unavailable WhatsApp/email/AI checklist capabilities are labeled pending.
+- New database migrations applied successfully. Original single RFQ remains. No sample truck listing or customer email was inserted into production during this update.
+- Full authenticated browser truck publish → request → bid → checklist flow is not yet exercised with separate live users. Database integration tests cover its permissions and persistence. Google live suggestions, AI generation, WhatsApp ingestion and email delivery cannot be tested until their connections exist.

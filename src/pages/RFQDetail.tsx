@@ -1,3 +1,4 @@
+import { ShipmentPreparation } from "../components/shipment-preparation";
 import { useCallback, useState } from "react";
 import {
   ArrowLeft,
@@ -224,6 +225,7 @@ export function RFQDetail({
                 {[
                   ["Cargo type", r.details.cargoType],
                   ["Cargo description", r.details.cargo],
+                  ["Packaging", r.details.packaging],
                   [
                     "Gross weight",
                     r.details.weight ? `${r.details.weight} kg` : undefined,
@@ -518,6 +520,9 @@ export function RFQDetail({
           </div>
         )}
       </Panel>
+      {!demo && owner && r.status !== "draft" && tab === "details" && (
+        <ShipmentPreparation rfq={r} />
+      )}
       {!owner && !myBid && r.status === "open" && (
         <Panel className="opportunity-cta">
           <div>

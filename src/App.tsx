@@ -1,3 +1,4 @@
+import { Automation } from "./components/platform-benefits";
 import {
   Component,
   lazy,
@@ -57,6 +58,9 @@ const RFQList = lazy(() =>
 );
 const Shipments = lazy(() =>
   import("./pages/Dashboard").then((m) => ({ default: m.Shipments })),
+);
+const Trucks = lazy(() =>
+  import("./pages/Trucks").then((m) => ({ default: m.Trucks })),
 );
 const RFQEditor = lazy(() =>
   import("./pages/RFQEditor").then((m) => ({ default: m.RFQEditor })),
@@ -173,6 +177,7 @@ export default function App() {
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route index element={<Home />} />
+                <Route path="automation" element={<Automation />} />
                 {[
                   "services",
                   "routes",
@@ -237,6 +242,7 @@ export default function App() {
                   <Route path="quotes" element={<QuotesList />} />
                   <Route path="shipments" element={<Shipments />} />
                   <Route path="saved-providers" element={<Providers saved />} />
+                  <Route path="trucks" element={<Trucks />} />
                   {sharedRoutes()}
                 </Route>
               </Route>
@@ -256,6 +262,7 @@ export default function App() {
                   <Route path="bids" element={<QuotesList />} />
                   <Route path="jobs" element={<Shipments />} />
                   <Route path="verification" element={<VerificationPage />} />
+                  <Route path="trucks" element={<Trucks manage />} />
                   {sharedRoutes()}
                 </Route>
               </Route>

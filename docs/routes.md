@@ -71,3 +71,11 @@ All routes are defined in `src/App.tsx`. Public/auth/customer/provider/admin lay
 Protected areas require an authenticated user, completed company onboarding and the appropriate role. Suspended companies receive an access notice. Administrators are assigned through the database, not the sign-up form.
 
 Authorized administrators use the **Admin workspace** header selector to open the existing customer/provider routes as private Cargo Owner, CFA or Truck Owner review companies. The route guard follows the effective workspace role; server-side checks remain authoritative.
+
+## Truck availability and automation additions (27 October 2026)
+
+- `/customer/trucks`: authenticated shipper truck search; route, date, truck type and capacity filters; starts a targeted RFQ inside the customer dashboard.
+- `/provider/trucks`: truck owners manage draft/published/closed availability; publishing requires verification. CFAs are directed to the RFQ marketplace.
+- `/automation`: public WhatsApp workflow explanation and shipment preparation; WhatsApp is explicitly not connected.
+- `/customer/rfqs/:id`: submitted inquiry detail now includes persisted preparation checklist and email preference. No email delivery is claimed.
+- Homepage and shipper dashboard share an accessible, pausable popular-route slider. Customer empty-state Create RFQ stays in `/customer/rfqs/new`.

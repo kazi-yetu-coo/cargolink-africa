@@ -150,13 +150,21 @@ export function DashboardLayout({ role }: { role: Role }) {
           [`${base}/rfqs`, "My RFQs", FileText],
           [`${base}/shipments`, "My shipments", Package],
           [`${base}/quotes`, "Quotations", ClipboardList],
+          [`${base}/trucks`, "Available trucks", Truck],
           [`${base}/messages`, "Messages", MessageSquare],
           [`${base}/saved-providers`, "Saved providers", Heart],
         ]
       : role === "provider"
         ? [
             [base, "Dashboard", LayoutDashboard],
-            [`${base}/marketplace`, "Find opportunities", Search],
+            [
+              `${base}/marketplace`,
+              company?.role === "trucker" ? "Find loads" : "Find opportunities",
+              Search,
+            ],
+            ...(company?.role === "trucker"
+              ? [[`${base}/trucks`, "My truck availability", Truck]]
+              : []),
             [`${base}/bids`, "My quotations", FileText],
             [`${base}/jobs`, "Awarded jobs", Truck],
             [`${base}/messages`, "Messages", MessageSquare],

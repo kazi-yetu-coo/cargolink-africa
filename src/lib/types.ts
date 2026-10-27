@@ -17,6 +17,7 @@ export type FreightLocation = {
   country: string;
   type: "Port" | "Airport" | "City" | "Inland terminal" | "Address";
   code: string;
+  placeId?: string;
 };
 export type ShipmentDetails = {
   origin?: FreightLocation;
@@ -30,6 +31,9 @@ export type ShipmentDetails = {
   deliveryAddress?: string;
   packageCount?: number;
   truckType?: string;
+  packaging?: string;
+  truckListingId?: string;
+  truckCompanyName?: string;
   quantity?: number;
   scope?: string;
   date?: string;
@@ -39,6 +43,8 @@ export type ShipmentDetails = {
   [key: string]: unknown;
 };
 export type RFQ = {
+  truck_listing_id?: string | null;
+  target_company_id?: string | null;
   review_owner_id?: string | null;
   id: string;
   owner_id: string;
@@ -103,4 +109,23 @@ export type Verification = {
   submitted_at: string;
   reviewed_at: string | null;
   companies?: Company;
+};
+
+export type TruckListing = {
+  id: string;
+  company_id: string;
+  owner_id: string;
+  review_owner_id: string | null;
+  origin: FreightLocation;
+  destination: FreightLocation;
+  via: string;
+  truck_type: string;
+  capacity_kg: number;
+  capacity_cbm: number | null;
+  available_from: string;
+  available_until: string;
+  notes: string;
+  status: "draft" | "available" | "closed";
+  created_at: string;
+  companies?: { name: string; verification_status: string };
 };

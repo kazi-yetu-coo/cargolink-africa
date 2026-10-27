@@ -1,3 +1,4 @@
+import { RoadLocationInput } from "./road-location-input";
 import { Field, LocationInput, Select } from "./ui";
 import type { ShipmentDetails, FreightLocation } from "../lib/types";
 import { defaultScope, equipmentOptions, scopeOptions } from "../lib/domain";
@@ -29,6 +30,7 @@ export function RouteFields({
     air = service === "Air Freight",
     road = service === "Trucking",
     storage = service === "Warehousing";
+  const RouteInput = road ? RoadLocationInput : LocationInput;
   const scopeField = (
     <Select
       label="Service scope"
@@ -42,7 +44,7 @@ export function RouteFields({
       <div
         className={`two-columns route-fields ${compact ? "compact" : ""} ${storage ? "storage" : ""}`}
       >
-        <LocationInput
+        <RouteInput
           key={`${service}-origin`}
           label={
             storage
@@ -58,10 +60,9 @@ export function RouteFields({
           value={details.origin}
           onChange={(v) => {
             onChange("origin", v);
-            if (road && v?.type === "Address")
-              onChange("pickupAddress", v.name);
+            if (road) onChange("pickupAddress", v?.name || "");
           }}
-          error={errors.origin}
+          error={errors.origin || errors.pickupAddress}
           types={types}
           allowAddress={
             road ||
@@ -74,7 +75,7 @@ export function RouteFields({
           }
         />
         {!storage && (
-          <LocationInput
+          <RouteInput
             key={`${service}-destination`}
             label={
               sea
@@ -88,10 +89,9 @@ export function RouteFields({
             value={details.destination}
             onChange={(v) => {
               onChange("destination", v);
-              if (road && v?.type === "Address")
-                onChange("deliveryAddress", v.name);
+              if (road) onChange("deliveryAddress", v?.name || "");
             }}
-            error={errors.destination}
+            error={errors.destination || errors.deliveryAddress}
             types={types}
             allowAddress={
               road || service === "Multimodal" || service === "Rail Freight"
@@ -104,55 +104,57 @@ export function RouteFields({
         {compact && scopeField}
       </div>
       {!compact && scopeField}
-      {!storage && (scope.startsWith("Door") || scope.endsWith("door")) && (
-        <section
-          className={`door-addresses ${compact ? "compact" : ""} ${scope.startsWith("Door") ? "" : "delivery-only"}`}
-        >
-          {!compact && (
-            <div>
-              <strong>
-                {scope === "Door to door"
-                  ? "Door-to-door locations"
-                  : "Door service location"}
-              </strong>
-              <p>
-                Give the exact collection or delivery address, including the
-                business name, street and city.
-              </p>
+      {!storage &&
+        !road &&
+        (scope.startsWith("Door") || scope.endsWith("door")) && (
+          <section
+            className={`door-addresses ${compact ? "compact" : ""} ${scope.startsWith("Door") ? "" : "delivery-only"}`}
+          >
+            {!compact && (
+              <div>
+                <strong>
+                  {scope === "Door to door"
+                    ? "Door-to-door locations"
+                    : "Door service location"}
+                </strong>
+                <p>
+                  Give the exact collection or delivery address, including the
+                  business name, street and city.
+                </p>
+              </div>
+            )}
+            <div className="two-columns">
+              {scope.startsWith("Door") && (
+                <Field
+                  label="Pickup address *"
+                  placeholder={
+                    compact
+                      ? "Street, business, city"
+                      : "Business / warehouse, street, city, country"
+                  }
+                  value={details.pickupAddress || ""}
+                  onChange={(e) => onChange("pickupAddress", e.target.value)}
+                  maxLength={500}
+                  error={errors.pickupAddress}
+                />
+              )}
+              {scope.endsWith("door") && (
+                <Field
+                  label="Delivery address *"
+                  placeholder={
+                    compact
+                      ? "Street, business, city"
+                      : "Business / warehouse, street, city, country"
+                  }
+                  value={details.deliveryAddress || ""}
+                  onChange={(e) => onChange("deliveryAddress", e.target.value)}
+                  maxLength={500}
+                  error={errors.deliveryAddress}
+                />
+              )}
             </div>
-          )}
-          <div className="two-columns">
-            {scope.startsWith("Door") && (
-              <Field
-                label="Pickup address *"
-                placeholder={
-                  compact
-                    ? "Street, business, city"
-                    : "Business / warehouse, street, city, country"
-                }
-                value={details.pickupAddress || ""}
-                onChange={(e) => onChange("pickupAddress", e.target.value)}
-                maxLength={500}
-                error={errors.pickupAddress}
-              />
-            )}
-            {scope.endsWith("door") && (
-              <Field
-                label="Delivery address *"
-                placeholder={
-                  compact
-                    ? "Street, business, city"
-                    : "Business / warehouse, street, city, country"
-                }
-                value={details.deliveryAddress || ""}
-                onChange={(e) => onChange("deliveryAddress", e.target.value)}
-                maxLength={500}
-                error={errors.deliveryAddress}
-              />
-            )}
-          </div>
-        </section>
-      )}
+          </section>
+        )}
     </>
   );
 }
@@ -253,6 +255,40 @@ export function TransportFields({
         )}
       </div>
     );
+  if (quick && service === "Trucking")
+    return (
+      <div className="two-columns">
+        <Field
+          label="Gross weight (kg)"
+          type="number"
+          min="0.01"
+          step="any"
+          value={details.weight ?? ""}
+          onChange={(e) =>
+            onChange(
+              "weight",
+              e.target.value ? Number(e.target.value) : undefined,
+            )
+          }
+          error={errors.weight}
+        />
+        <Select
+          label="Packaging"
+          value={details.packaging || "Not sure yet"}
+          onChange={(v) => onChange("packaging", v)}
+          options={[
+            "Not sure yet",
+            "Boxes / cartons",
+            "Pallets",
+            "Bags / sacks",
+            "Loose / bulk",
+            "Drums",
+            "Crates",
+            "Container",
+          ]}
+        />
+      </div>
+    );
   if (!quick && service === "Trucking")
     return (
       <div className="two-columns">
@@ -268,6 +304,8 @@ export function TransportFields({
             "Refrigerated truck",
             "Low loader",
             "Tanker",
+            "Pickup / light truck",
+            "Tipper",
           ]}
         />
         <Field
@@ -283,6 +321,21 @@ export function TransportFields({
             )
           }
           error={errors.packageCount}
+        />
+        <Select
+          label="Packaging"
+          value={details.packaging || "Not sure yet"}
+          onChange={(v) => onChange("packaging", v)}
+          options={[
+            "Not sure yet",
+            "Boxes / cartons",
+            "Pallets",
+            "Bags / sacks",
+            "Loose / bulk",
+            "Drums",
+            "Crates",
+            "Container",
+          ]}
         />
       </div>
     );

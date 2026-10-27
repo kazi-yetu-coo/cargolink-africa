@@ -25,7 +25,7 @@ import {
   Select,
 } from "../components/ui";
 import type { ShipmentDetails } from "../lib/types";
-import { locations } from "../lib/locations";
+import { PopularRoutes } from "../components/popular-routes";
 import {
   modes,
   defaultScope,
@@ -35,6 +35,7 @@ import {
 } from "../lib/domain";
 import { RouteFields, TransportFields } from "../components/shipment-fields";
 import { supabase, checked } from "../lib/supabase";
+import { PlatformBenefits } from "../components/platform-benefits";
 export function Home() {
   const [mode, setMode] = useState("Ocean Freight");
   const [details, setDetails] = useState<ShipmentDetails>({
@@ -81,7 +82,7 @@ export function Home() {
             AFRICA’S FREIGHT & LOGISTICS MARKETPLACE
           </Badge>
           <h1>
-            Move cargo across Africa.
+            From Africa to the world.
             <br />
             <span>Faster. Safer. Smarter.</span>
           </h1>
@@ -196,36 +197,17 @@ export function Home() {
               Try the inquiry assistant <ArrowRight size={14} />
             </Link>
           </div>
-          <div className="popular-routes">
-            <strong>Popular routes</strong>
-            {[
-              ["Lagos", "Nairobi"],
-              ["Mombasa", "Kampala"],
-              ["Dar es Salaam", "Kigali"],
-              ["Tema", "Accra"],
-            ].map(([a, b]) => (
-              <button
-                key={a}
-                onClick={() => {
-                  changeMode("Trucking");
-                  setDetails((d) => ({
-                    ...switchTransport(d, "Trucking"),
-                    origin:
-                      locations.find(
-                        (l) => l.name.startsWith(a) && l.type === "City",
-                      ) || locations.find((l) => l.name.startsWith(a)),
-                    destination: locations.find(
-                      (l) => l.name === b && l.type === "City",
-                    ),
-                  }));
-                }}
-              >
-                {a}
-                <ArrowRight size={11} />
-                {b}
-              </button>
-            ))}
-          </div>
+          <PopularRoutes
+            onSelect={(route) => {
+              changeMode("Trucking");
+              setDetails((d) => ({
+                ...switchTransport(d, "Trucking"),
+                ...route,
+                pickupAddress: route.origin.name,
+                deliveryAddress: route.destination.name,
+              }));
+            }}
+          />
         </Panel>
       </div>
       <section className="container section how-section">
@@ -277,6 +259,7 @@ export function Home() {
           })}
         </div>
       </section>
+      <PlatformBenefits />
       <section className="network-section">
         <div className="container network-grid">
           <div>

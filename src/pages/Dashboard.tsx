@@ -1,3 +1,4 @@
+import { PopularRoutes } from "../components/popular-routes";
 import { useCallback, useState } from "react";
 import {
   ArrowRight,
@@ -112,6 +113,8 @@ export function Dashboard({ demo = false }: { demo?: boolean }) {
       .order("created_at", { ascending: false });
     q = recordScope(q, isReview, user.id);
     if (role === "customer") q = q.eq("owner_id", user.id);
+    if (role === "provider")
+      q = q.or(`target_company_id.is.null,target_company_id.eq.${company?.id}`);
     if (isReview && role === "provider" && company?.role === "trucker")
       q = q.in("service", ["Trucking", "Multimodal"]);
     let bidQuery = recordScope(
@@ -239,6 +242,49 @@ export function Dashboard({ demo = false }: { demo?: boolean }) {
             </Link>
           </Alert>
         )}
+      {(role === "customer" || demo) && (
+        <Panel className="dashboard-routes">
+          <PopularRoutes
+            onSelect={(route) => {
+              sessionStorage.setItem(
+                "cargolink-inquiry",
+                JSON.stringify({
+                  service: "Trucking",
+                  details: {
+                    ...route,
+                    scope: "Door to door",
+                    pickupAddress: route.origin.name,
+                    deliveryAddress: route.destination.name,
+                  },
+                  resumeStep: 0,
+                }),
+              );
+              navigate(demo ? "/inquiry" : "/customer/rfqs/new");
+            }}
+          />
+          <Link
+            className="text-link"
+            to={demo ? "/auth/sign-up" : "/customer/trucks"}
+          >
+            Find available trucks on your route <ArrowRight size={15} />
+          </Link>
+        </Panel>
+      )}
+      {role === "provider" && company?.role === "trucker" && !demo && (
+        <Panel className="dashboard-routes">
+          <div className="between">
+            <div>
+              <h2>Put your next route to work</h2>
+              <p>
+                Publish available truck space so shippers can request a quote.
+              </p>
+            </div>
+            <ButtonLink to="/provider/trucks">
+              <Truck size={17} /> My truck availability
+            </ButtonLink>
+          </div>
+        </Panel>
+      )}
       <div className="dashboard-columns">
         <Panel className="table-panel">
           <div className="panel-heading">
@@ -270,8 +316,19 @@ export function Dashboard({ demo = false }: { demo?: boolean }) {
               title="Your next shipment starts here"
               description="Create an inquiry and start receiving quotations from logistics providers."
               action={
-                <ButtonLink to="/inquiry">
-                  Create an RFQ <Plus size={16} />
+                <ButtonLink
+                  to={
+                    demo
+                      ? "/inquiry"
+                      : role === "provider"
+                        ? "/provider/marketplace"
+                        : "/customer/rfqs/new"
+                  }
+                >
+                  {role === "provider" && !demo
+                    ? "Browse loads"
+                    : "Create an RFQ"}{" "}
+                  <Plus size={16} />
                 </ButtonLink>
               }
             />
@@ -360,10 +417,13 @@ export function RFQList({
     q = recordScope(q, isReview, user?.id);
     if (isReview && market && company?.role === "trucker")
       q = q.in("service", ["Trucking", "Multimodal"]);
-    if (market) q = q.eq("status", "open");
+    if (market)
+      q = q
+        .eq("status", "open")
+        .or(`target_company_id.is.null,target_company_id.eq.${company?.id}`);
     else q = q.eq("owner_id", user?.id);
     return (await checked(q)) as RFQ[];
-  }, [demo, market, user?.id, isReview, company?.role]);
+  }, [demo, market, user?.id, isReview, company?.role, company?.id]);
   const { data, error, loading, reload } = useLoad(loader);
   const rows = (data || []).filter(
     (r) =>

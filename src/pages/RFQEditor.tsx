@@ -282,6 +282,16 @@ export function RFQEditor() {
           </button>
         </Alert>
       )}
+      {details.truckListingId && (
+        <Alert tone="info">
+          <strong>
+            Quote request for{" "}
+            {details.truckCompanyName || "your selected truck owner"}.
+          </strong>{" "}
+          This inquiry goes to that truck owner. Confirm your exact addresses,
+          cargo weight and ready date within the listed availability.
+        </Alert>
+      )}
       {error && <Alert>{error}</Alert>}
       <InquiryProgress
         details={details}
@@ -322,6 +332,7 @@ export function RFQEditor() {
                   return (
                     <button
                       key={m}
+                      disabled={!!details.truckListingId && m !== "Trucking"}
                       type="button"
                       className={service === m ? "selected" : ""}
                       onClick={() => {
