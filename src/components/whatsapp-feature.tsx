@@ -18,7 +18,7 @@ const validNumber = /^[1-9]\d{7,14}$/.test(number);
 const chatUrl = validNumber
   ? `https://wa.me/${number}?text=${encodeURIComponent("Hello tuShip! I would like help with a shipping quotation.")}`
   : "/automation";
-function ChatLink({
+export function ChatLink({
   children,
   className,
 }: {
@@ -59,6 +59,20 @@ export function WhatsAppIcon() {
 export function HeroWhatsApp() {
   return (
     <ChatLink className="hero-whatsapp">
+      <svg
+        className="whatsapp-curly-arrow"
+        viewBox="0 0 100 65"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M5 57C47 66 71 24 47 22C24 20 35 55 85 8M65 10L86 7L84 28"
+          stroke="currentColor"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
       <span className="whatsapp-symbol">
         <WhatsAppIcon />
       </span>

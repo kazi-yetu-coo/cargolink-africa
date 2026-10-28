@@ -1,4 +1,8 @@
-import { HeroWhatsApp } from "../components/whatsapp-feature";
+import {
+  HeroWhatsApp,
+  ChatLink,
+  WhatsAppIcon,
+} from "../components/whatsapp-feature";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -208,9 +212,14 @@ export function Home() {
                 Start with your route. Complete the cargo details in the next
                 steps.
               </p>
-              <Button type="submit">
-                Get quotations <ArrowRight size={18} />
-              </Button>
+              <div className="quick-action-buttons">
+                <Button type="submit">
+                  Get quotations <ArrowRight size={18} />
+                </Button>
+                <ChatLink className="button quick-whatsapp">
+                  <WhatsAppIcon /> Quote by WhatsApp
+                </ChatLink>
+              </div>
             </div>
           </form>
           <div className="quick-bottom">

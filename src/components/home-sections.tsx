@@ -1,3 +1,4 @@
+import { ScrollStory } from "./scroll-story";
 import { WhatsAppFeature } from "./whatsapp-feature";
 import {
   ArrowRight,
@@ -17,78 +18,80 @@ import { PlatformBenefits } from "./platform-benefits";
 export function HomeSections() {
   return (
     <>
-      <WhatsAppFeature />
-      <section className="container tuship-how" id="how-it-works">
-        <div>
-          <div className="eyebrow">HOW TUSHIP WORKS</div>
-          <h2>
-            Simple, transparent
-            <br />
-            and reliable.
-          </h2>
-          <p>A modern way to ship, designed for businesses of all sizes.</p>
-          <ol className="tuship-steps">
-            {[
-              ["Request a quote", "Share your shipment details in minutes."],
-              [
-                "Compare bids",
-                "Review detailed quotations from verified providers.",
-              ],
-              [
-                "Choose and ship",
-                "Select the right partner and get connected.",
-              ],
-              [
-                "Track with confidence",
-                "Follow provider-reported milestones through delivery.",
-              ],
-            ].map(([title, body], i) => (
-              <li key={title}>
-                <span>{i + 1}</span>
-                <div>
-                  <h3>{title}</h3>
-                  <p>{body}</p>
+      <ScrollStory>
+        <section className="container tuship-how">
+          <div>
+            <div className="eyebrow">HOW TUSHIP WORKS</div>
+            <h2>
+              Simple, transparent
+              <br />
+              and reliable.
+            </h2>
+            <p>A modern way to ship, designed for businesses of all sizes.</p>
+            <ol className="tuship-steps">
+              {[
+                ["Request a quote", "Share your shipment details in minutes."],
+                [
+                  "Compare bids",
+                  "Review detailed quotations from verified providers.",
+                ],
+                [
+                  "Choose and ship",
+                  "Select the right partner and get connected.",
+                ],
+                [
+                  "Track with confidence",
+                  "Follow provider-reported milestones through delivery.",
+                ],
+              ].map(([title, body], i) => (
+                <li key={title}>
+                  <span>{i + 1}</span>
+                  <div>
+                    <h3>{title}</h3>
+                    <p>{body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="how-photo">
+            <img
+              src="/assets/tuship-business-owner.png"
+              alt="Business owner planning a shipment at her laptop"
+            />
+            <div className="floating-quotes">
+              <strong>More choice. One inquiry.</strong>
+              {[
+                "Compare the full price",
+                "Check what’s included",
+                "Choose with confidence",
+              ].map((x) => (
+                <div key={x}>
+                  <ShieldCheck size={18} />
+                  <span>{x}</span>
+                  <CheckCircle2 size={14} />
                 </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div className="how-photo">
-          <img
-            src="/assets/tuship-business-owner.png"
-            alt="Business owner planning a shipment at her laptop"
-          />
-          <div className="floating-quotes">
-            <strong>More choice. One inquiry.</strong>
-            {[
-              "Compare the full price",
-              "Check what’s included",
-              "Choose with confidence",
-            ].map((x) => (
-              <div key={x}>
-                <ShieldCheck size={18} />
-                <span>{x}</span>
-                <CheckCircle2 size={14} />
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="floating-progress">
+              <strong>Shipment milestones</strong>
+              {[
+                "Picked up",
+                "In transit",
+                "Arrived at port",
+                "Out for delivery",
+              ].map((x, i) => (
+                <span key={x} className={i < 2 ? "complete" : ""}>
+                  <i />
+                  {x}
+                </span>
+              ))}
+              <small>Illustrative provider updates</small>
+            </div>
           </div>
-          <div className="floating-progress">
-            <strong>Shipment milestones</strong>
-            {[
-              "Picked up",
-              "In transit",
-              "Arrived at port",
-              "Out for delivery",
-            ].map((x, i) => (
-              <span key={x} className={i < 2 ? "complete" : ""}>
-                <i />
-                {x}
-              </span>
-            ))}
-            <small>Illustrative provider updates</small>
-          </div>
-        </div>
-      </section>
+        </section>
+        <WhatsAppFeature />
+      </ScrollStory>
       <section className="shipping-solutions">
         <div className="container">
           <div className="section-heading">
