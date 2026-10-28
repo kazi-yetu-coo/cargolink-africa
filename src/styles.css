@@ -5835,3 +5835,16 @@ h2 {
 }
 .tuship-content-heading.with-art{max-width:none;width:100%;padding-right:52%}
 @media(max-width:767px){.tuship-content-heading.with-art{padding-right:0}}
+
+/* Authentication artwork: keep copy on a solid, high-contrast surface. */
+.auth-visual{background:#062b40;color:#fff;isolation:isolate}
+.auth-visual-top{background:#062b40}
+.auth-visual-top>span{color:#d0e5ed}
+.auth-visual .tuship-logo{color:#fff!important}
+.auth-visual .tuship-logo>span:first-child,.auth-visual .tuship-logo .logo-dot{color:#63e4c3}
+.auth-visual-copy{padding:10px 36px 28px;background:#062b40}
+.auth-visual-copy h2{color:#fff;line-height:1.2}
+.auth-visual-copy>p{color:#dcebf1;line-height:1.7}
+.auth-visual .auth-check{color:#e8f3f6}
+.auth-visual .auth-check svg{color:#63e4c3;flex-shrink:0}
+.auth-visual .auth-photo{inset:auto 0 0;height:300px;z-index:0;background:linear-gradient(#062b40 0%,#062b4000 38%),url('/assets/tuship-auth-ocean.jpg') center 55%/cover}

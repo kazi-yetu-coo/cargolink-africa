@@ -9,3 +9,7 @@ The marquee uses explicitly labeled example tariffs, not real provider bids or l
 New photographs were generated for the project: `tuship-hero.png`, `tuship-business-owner.png`, `tuship-rail.png`. `world-map.svg` derives from Natural Earth 1:110m country outlines (public domain), fetched from https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_admin_0_countries.geojson . Map connections are illustrative, not live carrier coverage.
 
 The brand is tuShip / tuShip.com. Existing GitHub, Supabase and Vercel project names are retained to preserve integration continuity. No domain purchase or DNS configuration is included in this visual update.
+
+## Authentication image and contrast fix
+
+Login/sign-up side panel uses white copy on solid navy (#062b40), with a separate lower photo area so busy image details cannot reduce text contrast. The photo is by Bent Van Aeken on Unsplash, marked free under the Unsplash License: https://unsplash.com/photos/an-aerial-view-of-a-cargo-ship-in-the-ocean-0A7YwYhZhWw . Downloaded source: https://images.unsplash.com/photo-1724597500306-a4cbb7d1324e . Saved as `tuship-auth-ocean.jpg`. Existing authentication logic is unchanged.
