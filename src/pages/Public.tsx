@@ -1,3 +1,8 @@
+import {
+  HeroHeadline,
+  HeroValueIcon,
+  useHeroMessages,
+} from "../components/hero-messages";
 import { HeroWhatsApp } from "../components/whatsapp-feature";
 import { useState } from "react";
 import {
@@ -37,6 +42,7 @@ import { RouteFields, TransportFields } from "../components/shipment-fields";
 import { supabase, checked } from "../lib/supabase";
 import { HomeSections } from "../components/home-sections";
 export function Home() {
+  const hero = useHeroMessages();
   const [mode, setMode] = useState("Ocean Freight");
   const [details, setDetails] = useState<ShipmentDetails>({
     cargoType: "General cargo",
@@ -78,11 +84,11 @@ export function Home() {
         <div className="container tuship-hero-grid">
           <div className="hero-content">
             <div className="eyebrow">A GLOBAL FREIGHT MARKETPLACE</div>
-            <h1>
-              Better shipping
-              <br />
-              starts here.
-            </h1>
+            <HeroHeadline
+              index={hero.index}
+              paused={hero.paused}
+              onToggle={() => hero.setPaused((p) => !p)}
+            />
             <p>
               Request quotes, compare rates and connect with
               <br className="desktop-only" /> verified logistics providers — all
@@ -125,6 +131,7 @@ export function Home() {
           </div>
           <div className="tuship-hero-art">
             <HeroWhatsApp />
+            <HeroValueIcon index={hero.index} />
             <img
               src="/assets/tuship-hero.png"
               alt="Air, sea and road freight connecting global trade"

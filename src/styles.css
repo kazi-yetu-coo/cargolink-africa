@@ -6491,3 +6491,147 @@ h2 {
     bottom: 12px;
   }
 }
+
+.tuship-hero .rotating-headline {
+  font-size: clamp(38px, 4.1vw, 58px);
+  line-height: 1.08;
+  min-height: 2.2em;
+  letter-spacing: -0.045em;
+}
+.headline-message {
+  display: block;
+  animation: headline-arrive 0.65s ease both;
+}
+.headline-message em {
+  font-style: normal;
+  color: #00a98b;
+}
+.hero-message-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 24px;
+  margin-top: 10px;
+}
+.hero-message-dots {
+  display: flex;
+  gap: 5px;
+}
+.hero-message-dots span {
+  height: 4px;
+  width: 13px;
+  background: #d6e7e4;
+  border-radius: 10px;
+}
+.hero-message-dots .current {
+  background: #00a98b;
+  width: 24px;
+}
+.hero-message-controls button {
+  border: 0;
+  background: transparent;
+  color: #52766d;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.hero-value-icon {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  background: #fffffff2;
+  border: 1px solid #d5ede5;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px #072c4020;
+  animation: value-pop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  pointer-events: none;
+}
+.hero-value-icon > span {
+  display: grid;
+  place-items: center;
+  color: #009b7e;
+  background: #e0f7ee;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+.hero-value-icon strong {
+  font-size: 12px;
+  color: #092a40;
+}
+.hero-value-position-0 {
+  top: 19%;
+  left: 4%;
+}
+.hero-value-position-1 {
+  top: 30%;
+  right: 1%;
+}
+.hero-value-position-2 {
+  top: 13%;
+  left: 12%;
+}
+.hero-value-position-3 {
+  top: 38%;
+  left: 2%;
+}
+.hero-value-position-4 {
+  top: 17%;
+  right: 3%;
+}
+@keyframes headline-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes value-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.88) rotate(-5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0);
+  }
+}
+@media (max-width: 767px) {
+  .tuship-hero .rotating-headline {
+    font-size: clamp(32px, 8.5vw, 46px);
+    min-height: 2.2em;
+  }
+  .hero-value-icon {
+    padding: 7px 10px;
+    gap: 7px;
+  }
+  .hero-value-icon > span {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+  .hero-value-icon svg {
+    width: 19px;
+    height: 19px;
+  }
+  .hero-value-icon strong {
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .headline-message,
+  .hero-value-icon {
+    animation: none;
+  }
+}
+.tuship-hero .rotating-headline .headline-message {
+  color: #06283e;
+}
