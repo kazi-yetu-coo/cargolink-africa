@@ -1,116 +1,127 @@
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Pause, Play } from "lucide-react";
+import { useState } from "react";
+import { ArrowUpRight, Pause, Play } from "lucide-react";
 import type { FreightLocation } from "../lib/types";
+// Illustrative design data only. Replace with an approved public tariff feed, never private bids.
 export const popularRoutes = [
-  ["Dar es Salaam", "Tanzania", "Kigali", "Rwanda"],
-  ["Mombasa", "Kenya", "Kampala", "Uganda"],
-  ["Nairobi", "Kenya", "Arusha", "Tanzania"],
-  ["Dar es Salaam", "Tanzania", "Lusaka", "Zambia"],
-  ["Lagos", "Nigeria", "Accra", "Ghana"],
-  ["Durban", "South Africa", "Johannesburg", "South Africa"],
-].map(([origin, country, destination, destinationCountry]) => ({
-  origin: { name: origin, country, type: "City", code: "" } as FreightLocation,
-  destination: {
-    name: destination,
-    country: destinationCountry,
-    type: "City",
-    code: "",
-  } as FreightLocation,
-}));
+  [
+    "Dar es Salaam",
+    "Tanzania",
+    "Shanghai",
+    "China",
+    "Dar – China",
+    "USD 1,850",
+    "/ 20ft container",
+  ],
+  [
+    "Shanghai",
+    "China",
+    "Dar es Salaam",
+    "Tanzania",
+    "China – Dar",
+    "USD 2,450",
+    "/ 20ft container",
+  ],
+  [
+    "Mombasa",
+    "Kenya",
+    "Kampala",
+    "Uganda",
+    "Mombasa – Kampala",
+    "USD 1,200",
+    "/ 10t truck",
+  ],
+  [
+    "Dar es Salaam",
+    "Tanzania",
+    "Kigali",
+    "Rwanda",
+    "Dar – Kigali",
+    "USD 1,650",
+    "/ 10t truck",
+  ],
+  [
+    "Nairobi",
+    "Kenya",
+    "Arusha",
+    "Tanzania",
+    "Nairobi – Arusha",
+    "USD 450",
+    "/ 3t truck",
+  ],
+].map(
+  ([origin, country, destination, destinationCountry, label, rate, scope]) => ({
+    origin: {
+      name: origin,
+      country,
+      type:
+        country === "China" || destinationCountry === "China" ? "Port" : "City",
+      code: "",
+    } as FreightLocation,
+    destination: {
+      name: destination,
+      country: destinationCountry,
+      type:
+        country === "China" || destinationCountry === "China" ? "Port" : "City",
+      code: "",
+    } as FreightLocation,
+    service:
+      country === "China" || destinationCountry === "China"
+        ? "Ocean Freight"
+        : "Trucking",
+    label,
+    rate,
+    scope,
+  }),
+);
 export function PopularRoutes({
   onSelect,
 }: {
   onSelect: (route: (typeof popularRoutes)[number]) => void;
 }) {
-  const track = useRef<HTMLDivElement>(null);
-  const [paused, setPaused] = useState(false),
-    [interacting, setInteracting] = useState(false);
-  function slide(direction: number) {
-    const el = track.current;
-    if (!el) return;
-    const end = el.scrollWidth - el.clientWidth;
-    const next =
-      direction > 0 && el.scrollLeft >= end - 4
-        ? 0
-        : direction < 0 && el.scrollLeft <= 4
-          ? end
-          : el.scrollLeft + direction * 260;
-    el.scrollTo({
-      left: next,
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-    });
-  }
-  useEffect(() => {
-    if (
-      paused ||
-      interacting ||
-      matchMedia("(prefers-reduced-motion: reduce)").matches
-    )
-      return;
-    const timer = setInterval(() => {
-      if (!document.hidden) slide(1);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [paused, interacting]);
+  const [paused, setPaused] = useState(false);
   return (
     <section
-      className="popular-route-slider"
-      aria-label="Popular freight routes"
-      aria-roledescription="carousel"
-      onMouseEnter={() => setInteracting(true)}
-      onMouseLeave={() => setInteracting(false)}
-      onFocusCapture={() => setInteracting(true)}
-      onBlurCapture={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setInteracting(false);
-      }}
+      className={`rate-marquee ${paused ? "is-paused" : ""}`}
+      aria-label="Popular routes with illustrative example rates"
     >
-      <div className="route-slider-heading">
-        <strong>Popular routes</strong>
-        <div>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Previous routes"
-            onClick={() => slide(-1)}
-          >
-            <ArrowLeft size={15} />
-          </button>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={
-              paused ? "Play route slideshow" : "Pause route slideshow"
-            }
-            onClick={() => setPaused(!paused)}
-          >
-            {paused ? <Play size={14} /> : <Pause size={14} />}
-          </button>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Next routes"
-            onClick={() => slide(1)}
-          >
-            <ArrowRight size={15} />
-          </button>
+      <div className="marquee-label">
+        <strong>Popular Routes:</strong>
+        <small>EXAMPLE RATES</small>
+      </div>
+      <div className="marquee-window">
+        <div className="marquee-belt">
+          {[0, 1].map((copy) => (
+            <div
+              className="marquee-group"
+              key={copy}
+              aria-hidden={copy === 1 ? true : undefined}
+            >
+              {popularRoutes.map((r) => (
+                <button
+                  key={r.label}
+                  tabIndex={copy === 1 ? -1 : 0}
+                  onClick={() => onSelect(r)}
+                  className="marquee-item"
+                  title="Example only, not a live offer. Freight only; duties, insurance and local charges excluded. Request a current quotation."
+                >
+                  <span className="marquee-route">{r.label}</span>
+                  <strong>{r.rate}</strong>
+                  <span className="marquee-scope">{r.scope}</span>
+                  <ArrowUpRight size={14} />
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
-      <div className="route-slider-track" ref={track}>
-        {popularRoutes.map((r) => (
-          <button
-            type="button"
-            className="route-chip"
-            key={r.origin.name + r.destination.name}
-            onClick={() => onSelect(r)}
-          >
-            <span>{r.origin.name}</span>
-            <ArrowRight size={14} />
-            <span>{r.destination.name}</span>
-          </button>
-        ))}
-      </div>
+      <button
+        type="button"
+        className="icon-button"
+        aria-label={paused ? "Play route marquee" : "Pause route marquee"}
+        onClick={() => setPaused((p) => !p)}
+      >
+        {paused ? <Play size={14} /> : <Pause size={14} />}
+      </button>
     </section>
   );
 }

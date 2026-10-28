@@ -138,7 +138,7 @@ export function InquiryAssistant() {
   return (
     <main className="container content-page">
       <PageTitle
-        eyebrow="CARGOLINK INQUIRY ASSISTANT"
+        eyebrow="TUSHIP INQUIRY ASSISTANT"
         title="Your shipment, in your own words."
         description="Describe what you need. Review the structured inquiry before anything is submitted."
         actions={
@@ -154,7 +154,7 @@ export function InquiryAssistant() {
               <Sparkles size={22} />
             </span>
             <div>
-              <h3>CargoLink Assistant</h3>
+              <h3>tuShip Assistant</h3>
               <small>AI-assisted inquiry preparation</small>
             </div>
           </header>

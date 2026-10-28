@@ -126,7 +126,7 @@ export function AdminDashboard() {
     <>
       <PageTitle
         title="Platform overview"
-        description="A clear picture of the CargoLink marketplace."
+        description="A clear picture of the tuShip marketplace."
         actions={
           <Badge tone="green">
             <span className="status-dot" />

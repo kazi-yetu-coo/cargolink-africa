@@ -369,7 +369,7 @@ export function Notifications() {
     <>
       <PageTitle
         title="Notifications"
-        description="The latest updates from your CargoLink connections."
+        description="The latest updates from your tuShip connections."
         actions={
           <Button variant="secondary" onClick={() => void mark()}>
             <CheckCheck size={16} />
@@ -738,7 +738,7 @@ export function Profile({ settings = false }: { settings?: boolean }) {
             </span>
             <span>
               <ShieldCheck size={16} />
-              Protected CargoLink account
+              Protected tuShip account
             </span>
           </div>
         </Panel>

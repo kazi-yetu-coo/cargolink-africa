@@ -425,7 +425,7 @@ export function RFQDetail({
           <div className="panel-pad">
             <h2>Shipment activity</h2>
             <p className="muted">
-              Milestones are entered by the awarded provider. CargoLink does not
+              Milestones are entered by the awarded provider. tuShip does not
               provide live GPS tracking.
             </p>
             <div className="timeline">

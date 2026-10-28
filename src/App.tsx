@@ -110,7 +110,7 @@ class Boundary extends Component<{ children: ReactNode }, { error: boolean }> {
     return { error: true };
   }
   componentDidCatch(e: Error, info: ErrorInfo) {
-    console.error("CargoLink render error", e, info.componentStack);
+    console.error("tuShip render error", e, info.componentStack);
   }
   render() {
     return this.state.error ? (
@@ -120,7 +120,7 @@ class Boundary extends Component<{ children: ReactNode }, { error: boolean }> {
         <Alert>
           This page could not be displayed. Reload the workspace to continue.
         </Alert>
-        <Button onClick={() => location.reload()}>Reload CargoLink</Button>
+        <Button onClick={() => location.reload()}>Reload tuShip</Button>
         <Link to="/">Return home</Link>
       </div>
     ) : (

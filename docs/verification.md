@@ -83,3 +83,12 @@ Browser verification observed progress at 0%, 8% after one location, 25% after r
 - Benefits section screenshot saved in handoff outputs. All decorative comparisons/chats are labeled illustrative, and unavailable WhatsApp/email/AI checklist capabilities are labeled pending.
 - New database migrations applied successfully. Original single RFQ remains. No sample truck listing or customer email was inserted into production during this update.
 - Full authenticated browser truck publish → request → bid → checklist flow is not yet exercised with separate live users. Database integration tests cover its permissions and persistence. Google live suggestions, AI generation, WhatsApp ingestion and email delivery cannot be tested until their connections exist.
+
+## tuShip design refresh — 28 October 2026
+
+- Existing 51 tests pass; ESLint, TypeScript (via production build) and Vite build pass.
+- Desktop 1440px, tablet 768px and mobile 390px homepage checks: no page-level horizontal overflow.
+- Mobile road inquiry with manually typed addresses still proceeds to step 2 and shows the first-step success message. Existing mode-specific fields remain intact.
+- Selecting Dar–China in the marquee populates Dar es Salaam and Shanghai as ocean locations. The displayed rate is only an example, not a quote copied into the RFQ.
+- Retained benefits section is present. New hero and how-it-works images load; public navigation and existing inquiry routes resolve. Brand/colours/typography update shared layouts without changing permissions or backend schema.
+- Website branding is tuShip.com; the preview continues on the existing Vercel hostname. Domain ownership/DNS are not changed.

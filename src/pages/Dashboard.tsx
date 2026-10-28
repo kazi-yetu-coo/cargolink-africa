@@ -249,10 +249,14 @@ export function Dashboard({ demo = false }: { demo?: boolean }) {
               sessionStorage.setItem(
                 "cargolink-inquiry",
                 JSON.stringify({
-                  service: "Trucking",
+                  service: route.service,
                   details: {
-                    ...route,
-                    scope: "Door to door",
+                    origin: route.origin,
+                    destination: route.destination,
+                    scope:
+                      route.service === "Trucking"
+                        ? "Door to door"
+                        : "Port to port",
                     pickupAddress: route.origin.name,
                     deliveryAddress: route.destination.name,
                   },

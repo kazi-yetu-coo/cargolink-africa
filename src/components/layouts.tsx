@@ -49,10 +49,10 @@ export function PublicLayout() {
             {open ? <X /> : <Menu />}
           </button>
           <nav className={open ? "open" : ""} onClick={() => setOpen(false)}>
-            <NavLink to="/services">Services</NavLink>
-            <NavLink to="/routes">Routes</NavLink>
+            <NavLink to="/services">Ship</NavLink>
+            <NavLink to="/routes">Search rates</NavLink>
             <NavLink to="/for-businesses">For businesses</NavLink>
-            <NavLink to="/for-providers">For providers</NavLink>
+            <NavLink to="/for-providers">For carriers</NavLink>
             <NavLink to="/resources">Resources</NavLink>
           </nav>
           <div className="nav-actions">
@@ -62,9 +62,9 @@ export function PublicLayout() {
               </ButtonLink>
             ) : (
               <>
-                <Link to="/auth/sign-in">Sign in</Link>
-                <ButtonLink to="/auth/sign-up">
-                  Get started <ChevronRight size={15} />
+                <Link to="/auth/sign-in">Log in</Link>
+                <ButtonLink to="/inquiry">
+                  Get a quote <ChevronRight size={15} />
                 </ButtonLink>
               </>
             )}
@@ -72,19 +72,48 @@ export function PublicLayout() {
         </div>
       </header>
       <Outlet />
-      <footer className="site-footer">
+      <footer className="site-footer tuship-footer">
         <div>
           <Logo />
-          <p>Connecting cargo. Connecting Africa.</p>
+          <p>
+            Better shipping starts here.
+            <br />
+            Built in Africa. Connected to the world.
+          </p>
         </div>
-        <div>
-          <Link to="/about">About us</Link>
-          <Link to="/contact">Contact</Link>
+        <nav aria-label="Footer shipping">
+          <strong>Ship</strong>
+          <Link to="/inquiry">Get a quote</Link>
+          <Link to="/services">Shipping modes</Link>
+          <Link to="/routes">Trade routes</Link>
+        </nav>
+        <nav aria-label="Footer providers">
+          <strong>For carriers</strong>
+          <Link to="/for-providers">Join as a provider</Link>
+          <Link to="/provider/trucks">Truck availability</Link>
+          <Link to="/provider/marketplace">Find opportunities</Link>
+        </nav>
+        <nav aria-label="Footer resources">
+          <strong>Resources</strong>
+          <Link to="/resources">Guides & resources</Link>
+          <Link to="/automation">Shipping automation</Link>
           <Link to="/help">Help centre</Link>
-          <Link to="/terms">Terms</Link>
-          <Link to="/privacy">Privacy</Link>
+        </nav>
+        <nav aria-label="Footer company">
+          <strong>About</strong>
+          <Link to="/about">Our story</Link>
+          <Link to="/contact">Contact us</Link>
+          <Link to="/for-businesses">For businesses</Link>
+        </nav>
+        <div className="footer-bottom">
+          <small>
+            © {new Date().getFullYear()} tuShip. All rights reserved.
+          </small>
+          <div>
+            <Link to="/terms">Terms</Link>
+            <Link to="/privacy">Privacy</Link>
+          </div>
         </div>
-        <small>© {new Date().getFullYear()} CargoLink Africa</small>
       </footer>
     </div>
   );
@@ -100,8 +129,7 @@ export function AuthLayout() {
       </header>
       <Outlet />
       <footer>
-        Connecting cargo. Connecting Africa.{" "}
-        <Link to="/privacy">Privacy policy</Link>
+        Better shipping starts here. <Link to="/privacy">Privacy policy</Link>
       </footer>
     </div>
   );
@@ -271,7 +299,7 @@ export function DashboardLayout({ role }: { role: Role }) {
                   : "Administrator"}
             </span>
             <ChevronRight size={14} />
-            <strong>CargoLink workspace</strong>
+            <strong>tuShip workspace</strong>
           </div>
           <div className="actions">
             <WorkspaceSwitcher />
@@ -307,7 +335,7 @@ export function DashboardLayout({ role }: { role: Role }) {
           <Outlet />
         </main>
         <footer className="dashboard-footer">
-          CargoLink Africa <span>Built for the way Africa moves.</span>
+          tuShip <span>Built for the way Africa moves.</span>
         </footer>
       </div>
     </div>

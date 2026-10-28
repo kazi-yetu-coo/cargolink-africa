@@ -4,7 +4,6 @@ import {
   ArrowUpRight,
   CheckCircle2,
   Globe2,
-  MapPin,
   PackageCheck,
   Plane,
   ShieldCheck,
@@ -35,7 +34,7 @@ import {
 } from "../lib/domain";
 import { RouteFields, TransportFields } from "../components/shipment-fields";
 import { supabase, checked } from "../lib/supabase";
-import { PlatformBenefits } from "../components/platform-benefits";
+import { HomeSections } from "../components/home-sections";
 export function Home() {
   const [mode, setMode] = useState("Ocean Freight");
   const [details, setDetails] = useState<ShipmentDetails>({
@@ -74,43 +73,68 @@ export function Home() {
   }
   return (
     <>
-      <section className="hero">
-        <div className="hero-art" />
-        <div className="hero-content container">
-          <Badge tone="outline">
-            <span className="status-dot" />
-            AFRICA’S FREIGHT & LOGISTICS MARKETPLACE
-          </Badge>
-          <h1>
-            From Africa to the world.
-            <br />
-            <span>Faster. Safer. Smarter.</span>
-          </h1>
-          <p>
-            One connected marketplace. Trusted logistics partners.
-            <br />A better way to get your cargo where it needs to be.
-          </p>
-          <div className="hero-trust">
-            <span>
-              <ShieldCheck size={17} />
-              Verified providers
-            </span>
-            <span>
-              <CheckCircle2 size={17} />
-              Competitive quotations
-            </span>
-            <span>
-              <Globe2 size={17} />
-              End-to-end connections
-            </span>
+      <section className="hero tuship-hero">
+        <div className="container tuship-hero-grid">
+          <div className="hero-content">
+            <div className="eyebrow">A GLOBAL FREIGHT MARKETPLACE</div>
+            <h1>
+              Better shipping
+              <br />
+              starts here.
+            </h1>
+            <p>
+              Request quotes, compare rates and connect with
+              <br className="desktop-only" /> verified logistics providers — all
+              in one place.
+            </p>
+            <div className="hero-buttons">
+              <a className="button" href="#shipping-quotes">
+                Get a quote <ArrowRight size={17} />
+              </a>
+              <a className="button secondary" href="#how-it-works">
+                See how it works
+              </a>
+            </div>
+            <div className="hero-trust">
+              <span>
+                <Globe2 size={22} />
+                Multiple
+                <br />
+                providers
+              </span>
+              <span>
+                <CheckCircle2 size={22} />
+                Competitive
+                <br />
+                rates
+              </span>
+              <span>
+                <ShieldCheck size={22} />
+                Verified
+                <br />
+                partners
+              </span>
+              <span>
+                <PackageCheck size={22} />
+                End-to-end
+                <br />
+                connections
+              </span>
+            </div>
           </div>
-        </div>
-        <div className="hero-caption">
-          <span className="status-dot" /> Connecting African trade to the world
+          <div className="tuship-hero-art">
+            <img
+              src="/assets/tuship-hero.png"
+              alt="Air, sea and road freight connecting global trade"
+            />
+          </div>
         </div>
       </section>
       <div className="container inquiry-container">
         <Panel className="quick-inquiry">
+          <h2 id="shipping-quotes" className="quote-heading">
+            Get shipping quotes in minutes
+          </h2>
           <div className="service-tabs">
             {[
               ["Ocean Freight", Ship],
@@ -199,10 +223,11 @@ export function Home() {
           </div>
           <PopularRoutes
             onSelect={(route) => {
-              changeMode("Trucking");
+              changeMode(route.service);
               setDetails((d) => ({
-                ...switchTransport(d, "Trucking"),
-                ...route,
+                ...switchTransport(d, route.service),
+                origin: route.origin,
+                destination: route.destination,
                 pickupAddress: route.origin.name,
                 deliveryAddress: route.destination.name,
               }));
@@ -210,123 +235,9 @@ export function Home() {
           />
         </Panel>
       </div>
-      <section className="container section how-section">
-        <div className="section-heading">
-          <div>
-            <div className="eyebrow">LESS FRICTION. MORE MOVEMENT.</div>
-            <h2>Your next shipment starts here.</h2>
-          </div>
-          <p>
-            From your first inquiry to the final mile,
-            <br />
-            keep every conversation in one place.
-          </p>
-        </div>
-        <div className="three-columns">
-          {[
-            [
-              Ship,
-              "01",
-              "Tell us what’s moving",
-              "Share your route, cargo details and the services you need. One inquiry reaches the right providers.",
-            ],
-            [
-              FileIcon,
-              "02",
-              "Find your best fit",
-              "Compare detailed quotations, delivery timelines and service terms with full visibility.",
-            ],
-            [
-              ShieldCheck,
-              "03",
-              "Move with confidence",
-              "Choose a verified logistics partner and coordinate your shipment directly.",
-            ],
-          ].map(([I, n, title, description]) => {
-            const Icon = I as typeof Ship;
-            return (
-              <article className="how-card" key={String(n)}>
-                <div className="between">
-                  <span className="icon-tile">
-                    <Icon size={25} />
-                  </span>
-                  <span className="step-number">{String(n)}</span>
-                </div>
-                <h3>{String(title)}</h3>
-                <p>{String(description)}</p>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-      <PlatformBenefits />
-      <section className="network-section">
-        <div className="container network-grid">
-          <div>
-            <div className="eyebrow">A CONTINENT OF OPPORTUNITY</div>
-            <h2>
-              Local expertise.
-              <br />
-              Connected across borders.
-            </h2>
-            <p>
-              Ocean, air, road or rail. Connect with logistics businesses that
-              understand your routes, your cargo and your destination.
-            </p>
-            <ButtonLink to="/routes" variant="secondary">
-              Explore trade routes <ArrowUpRight size={17} />
-            </ButtonLink>
-          </div>
-          <div className="route-visual">
-            <span className="map-grid" />
-            <div className="route-label label-one">
-              <MapPin size={16} />
-              Lagos <small>Nigeria</small>
-            </div>
-            <div className="route-label label-two">
-              <MapPin size={16} />
-              Nairobi <small>Kenya</small>
-            </div>
-            <div className="route-label label-three">
-              <MapPin size={16} />
-              Dar es Salaam <small>Tanzania</small>
-            </div>
-            <svg viewBox="0 0 500 260" aria-hidden="true">
-              <path d="M90 80 Q240 0 365 120 T300 220" />
-              <circle cx="90" cy="80" r="7" />
-              <circle cx="365" cy="120" r="7" />
-              <circle cx="300" cy="220" r="7" />
-            </svg>
-            <Badge tone="green">
-              <Globe2 size={14} />
-              Built around African trade
-            </Badge>
-          </div>
-        </div>
-      </section>
-      <section className="container section">
-        <div className="provider-cta">
-          <div className="icon-tile">
-            <Truck size={28} />
-          </div>
-          <div>
-            <div className="eyebrow">FOR LOGISTICS PROVIDERS</div>
-            <h2>Your next customer is looking for you.</h2>
-            <p>
-              Discover relevant freight inquiries and grow your business across
-              Africa.
-            </p>
-          </div>
-          <ButtonLink to="/for-providers">
-            Become a provider <ArrowRight size={17} />
-          </ButtonLink>
-        </div>
-      </section>
+      <HomeSections />
     </>
   );
-}
-function FileIcon({ size = 24 }: { size?: number }) {
-  return <PackageCheck size={size} />;
 }
 const content: Record<
   string,
@@ -351,22 +262,22 @@ const content: Record<
       "Bring your inquiries, quotations and provider conversations together. Make decisions with clear scopes and service terms.",
   },
   "for-providers": {
-    title: "Move more cargo. Grow your business.",
+    title: "Grow your business with tuShip.",
     eyebrow: "FOR SERVICE PROVIDERS",
     description:
       "Build your verified business profile, discover relevant freight opportunities and send detailed quotations to cargo owners.",
   },
   resources: {
-    title: "Make your next move a smarter one.",
+    title: "Insights to move your business forward.",
     eyebrow: "RESOURCE CENTRE",
     description:
       "Practical guidance for shipping, comparing quotations and working with logistics providers.",
   },
   about: {
-    title: "Connecting cargo. Connecting Africa.",
-    eyebrow: "ABOUT CARGOLINK",
+    title: "Better shipping starts here.",
+    eyebrow: "ABOUT TUSHIP",
     description:
-      "CargoLink Africa connects cargo owners with logistics service providers through transparent inquiries, detailed quotations and direct communication.",
+      "tuShip connects cargo owners with logistics service providers through transparent inquiries, detailed quotations and direct communication.",
   },
   help: {
     title: "How can we help?",
@@ -378,7 +289,7 @@ const content: Record<
     title: "Terms of use",
     eyebrow: "PLATFORM POLICIES",
     description:
-      "CargoLink Africa is a marketplace connecting independent cargo owners and logistics providers. These operational guidelines describe how to use the platform.",
+      "tuShip is a marketplace connecting independent cargo owners and logistics providers. These operational guidelines describe how to use the platform.",
   },
   privacy: {
     title: "Your information, handled with care.",
@@ -393,10 +304,24 @@ export function ContentPage({ page: given }: { page?: string }) {
     c = content[page] || content.about;
   return (
     <main className="container content-page">
-      <div className="content-heading">
+      <div
+        className={`content-heading tuship-content-heading ${["for-providers", "for-businesses", "about", "services"].includes(page) ? "with-art" : ""}`}
+      >
         <div className="eyebrow">{c.eyebrow}</div>
         <h1>{c.title}</h1>
         <p>{c.description}</p>
+        {["for-providers", "for-businesses", "about", "services"].includes(
+          page,
+        ) && (
+          <img
+            src={
+              page === "for-businesses"
+                ? "/assets/tuship-business-owner.png"
+                : "/assets/tuship-hero.png"
+            }
+            alt="Global shipping with tuShip"
+          />
+        )}
       </div>
       {page === "services" ? (
         <div className="three-columns">
@@ -567,7 +492,7 @@ export function Contact() {
       <div className="content-heading">
         <div className="eyebrow">CONTACT & SUPPORT</div>
         <h1>Let’s keep your cargo moving.</h1>
-        <p>Send a question to the CargoLink operations team.</p>
+        <p>Send a question to the tuShip operations team.</p>
       </div>
       <Panel className="narrow">
         <form
@@ -632,7 +557,7 @@ export function NotFound() {
           to continue.
         </p>
         <ButtonLink to="/">
-          Back to CargoLink <ArrowRight size={17} />
+          Back to tuShip <ArrowRight size={17} />
         </ButtonLink>
       </div>
     </main>

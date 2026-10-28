@@ -119,9 +119,7 @@ export function AuthPage({
     <main className="auth-main">
       <div className="auth-form">
         <div className="eyebrow">
-          {signup
-            ? "YOUR NEXT CHAPTER STARTS HERE"
-            : "WELCOME TO CARGOLINK AFRICA"}
+          {signup ? "YOUR NEXT CHAPTER STARTS HERE" : "WELCOME TO TUSHIP"}
         </div>
         <h1>
           {reset
@@ -138,8 +136,8 @@ export function AuthPage({
             : update
               ? "Choose a strong password to protect your account."
               : signup
-                ? "Join a more connected way to move freight across Africa."
-                : "Sign in to your CargoLink workspace."}
+                ? "Join a more connected way to move freight around the world."
+                : "Sign in to your tuShip workspace."}
         </p>
         {!reset && !update && (
           <>
@@ -333,7 +331,7 @@ export function AuthPage({
             ? "Already have an account?"
             : reset || update
               ? "Ready to continue?"
-              : "New to CargoLink?"}{" "}
+              : "New to tuShip?"}{" "}
           <Link
             to={signup || reset || update ? "/auth/sign-in" : "/auth/sign-up"}
           >
@@ -432,7 +430,7 @@ export function Onboarding() {
         <p className="fine-print">Step {step + 1} of 2</p>
         {step === 0 ? (
           <>
-            <h3>How will you use CargoLink?</h3>
+            <h3>How will you use tuShip?</h3>
             <div className="role-cards">
               {[
                 ["shipper", "Cargo owner"],

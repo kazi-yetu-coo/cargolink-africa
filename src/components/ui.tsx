@@ -13,7 +13,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  Link2,
   Loader2,
   MapPin,
   Package,
@@ -26,13 +25,8 @@ import type { FreightLocation } from "../lib/types";
 import { locationLabel, searchLocations } from "../lib/locations";
 export function Logo() {
   return (
-    <Link to="/" className="logo" aria-label="CargoLink Africa home">
-      <span className="logo-symbol">
-        <Link2 size={28} strokeWidth={3} />
-      </span>
-      <span>
-        CargoLink<span className="logo-africa"> Africa</span>
-      </span>
+    <Link to="/" className="logo tuship-logo" aria-label="tuShip home">
+      <span>tu</span>Ship<span className="logo-dot">.</span>
     </Link>
   );
 }
