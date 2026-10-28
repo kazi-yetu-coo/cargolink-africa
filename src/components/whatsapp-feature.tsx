@@ -10,7 +10,7 @@ import {
 import { Link } from "react-router-dom";
 
 // This is a chat deep link, not a claim that the AI/WhatsApp backend is connected.
-const number = (import.meta.env.VITE_WHATSAPP_NUMBER || "").replace(
+const number = (import.meta.env.VITE_WHATSAPP_NUMBER || "255757490145").replace(
   /[\s+()-]/g,
   "",
 );
