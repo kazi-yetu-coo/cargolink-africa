@@ -6635,3 +6635,53 @@ h2 {
 .tuship-hero .rotating-headline .headline-message {
   color: #06283e;
 }
+
+/* Reveal the opening thought, then type the answer without shifting the layout. */
+.tuship-hero .typed-phrase {
+  white-space: nowrap;
+  display: inline-block;
+}
+.tuship-hero .typed-letter {
+  color: inherit;
+  display: inline;
+  opacity: 0;
+  animation: type-letter 1ms linear forwards;
+}
+.typing-caret {
+  display: inline-block;
+  width: 3px;
+  height: 0.8em;
+  margin-left: 5px;
+  background: currentColor;
+  opacity: 0;
+  animation: caret-flash 0.7s step-end 4;
+}
+.typing-paused .headline-message,
+.typing-paused .typed-letter,
+.typing-paused .typing-caret {
+  animation-play-state: paused;
+}
+@keyframes type-letter {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes caret-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tuship-hero .typed-letter {
+    opacity: 1;
+    animation: none;
+  }
+  .typing-caret {
+    display: none;
+    animation: none;
+  }
+}

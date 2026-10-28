@@ -1,8 +1,4 @@
-import {
-  HeroHeadline,
-  HeroValueIcon,
-  useHeroMessages,
-} from "../components/hero-messages";
+import { HeroHeadline, useHeroMessages } from "../components/hero-messages";
 import { HeroWhatsApp } from "../components/whatsapp-feature";
 import { useState } from "react";
 import {
@@ -131,7 +127,6 @@ export function Home() {
           </div>
           <div className="tuship-hero-art">
             <HeroWhatsApp />
-            <HeroValueIcon index={hero.index} />
             <img
               src="/assets/tuship-hero.png"
               alt="Air, sea and road freight connecting global trade"
