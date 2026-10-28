@@ -6476,3 +6476,20 @@ h2 {
     transition: none;
   }
 }
+
+/* Keep the floating chat card and its arrow above the overlapping quote form. */
+.tuship-hero {
+  position: relative;
+  z-index: 4;
+}
+.tuship-hero-art {
+  overflow: visible;
+}
+.hero-whatsapp {
+  bottom: 18px;
+}
+@media (max-width: 767px) {
+  .hero-whatsapp {
+    bottom: 12px;
+  }
+}
