@@ -1,3 +1,4 @@
+import { HeroWhatsApp } from "../components/whatsapp-feature";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -123,6 +124,7 @@ export function Home() {
             </div>
           </div>
           <div className="tuship-hero-art">
+            <HeroWhatsApp />
             <img
               src="/assets/tuship-hero.png"
               alt="Air, sea and road freight connecting global trade"

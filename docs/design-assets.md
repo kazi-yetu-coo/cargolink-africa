@@ -13,3 +13,7 @@ The brand is tuShip / tuShip.com. Existing GitHub, Supabase and Vercel project n
 ## Authentication image and contrast fix
 
 Login/sign-up side panel uses white copy on solid navy (#062b40), with a separate lower photo area so busy image details cannot reduce text contrast. The photo is by Bent Van Aeken on Unsplash, marked free under the Unsplash License: https://unsplash.com/photos/an-aerial-view-of-a-cargo-ship-in-the-ocean-0A7YwYhZhWw . Downloaded source: https://images.unsplash.com/photo-1724597500306-a4cbb7d1324e . Saved as `tuship-auth-ocean.jpg`. Existing authentication logic is unchanged.
+
+## WhatsApp homepage feature
+
+Added an anchored hero WhatsApp card and a mint feature section with a CSS phone illustration. The copy explains message → AI-organised draft → account/review/submission → provider quotations. The existing homepage sections and freight fields remain intact. Both links use `/automation` until `VITE_WHATSAPP_NUMBER` contains an international number (digits, country code, no leading zero). Once configured and rebuilt, links open `https://wa.me/<number>` with a generic greeting; no shipment or account details are transmitted automatically. This enables a chat link only, not the AI/WhatsApp backend. Planned automation remains explicitly labeled coming soon. No business number has been supplied.

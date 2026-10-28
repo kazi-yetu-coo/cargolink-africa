@@ -1,3 +1,4 @@
+import { WhatsAppFeature } from "./whatsapp-feature";
 import {
   ArrowRight,
   CheckCircle2,
@@ -16,6 +17,7 @@ import { PlatformBenefits } from "./platform-benefits";
 export function HomeSections() {
   return (
     <>
+      <WhatsAppFeature />
       <section className="container tuship-how" id="how-it-works">
         <div>
           <div className="eyebrow">HOW TUSHIP WORKS</div>
