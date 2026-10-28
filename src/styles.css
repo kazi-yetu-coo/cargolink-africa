@@ -5833,3 +5833,5 @@ h2 {
     font-size: 28px;
   }
 }
+.tuship-content-heading.with-art{max-width:none;width:100%;padding-right:52%}
+@media(max-width:767px){.tuship-content-heading.with-art{padding-right:0}}
