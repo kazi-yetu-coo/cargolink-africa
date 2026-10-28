@@ -18,11 +18,20 @@ export function ScrollStory({ children }: { children: ReactNode }) {
         window.innerWidth >= 1101 &&
         panels.every((panel) => panel.scrollHeight <= window.innerHeight - 160);
       setPinned(fits);
-      setActive(
-        fits && element.getBoundingClientRect().top < -window.innerHeight * 0.55
-          ? 1
-          : 0,
-      );
+      // Start fading as soon as the stage reaches its sticky position.
+      // A short native scroll completes the transition; no wheel interception.
+      const progress = fits
+        ? Math.min(
+            1,
+            Math.max(
+              0,
+              (80 - element.getBoundingClientRect().top) /
+                (window.innerHeight * 0.28),
+            ),
+          )
+        : 0;
+      element.style.setProperty("--story-progress", String(progress));
+      setActive(progress >= 0.5 ? 1 : 0);
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);

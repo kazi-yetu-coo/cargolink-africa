@@ -6333,7 +6333,7 @@ h2 {
   padding-block: 42px;
 }
 .scroll-story.is-pinned {
-  height: 220svh;
+  height: 140svh;
 }
 .is-pinned .story-stage {
   position: sticky;
@@ -6344,19 +6344,17 @@ h2 {
 }
 .is-pinned .story-panel {
   grid-area: 1 / 1;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(32px);
-  transition:
-    opacity 0.45s ease,
-    transform 0.55s ease,
-    visibility 0.45s;
   pointer-events: none;
 }
+.is-pinned .story-panel:first-child {
+  opacity: calc(1 - var(--story-progress, 0));
+  transform: translateY(calc(var(--story-progress, 0) * -12px));
+}
+.is-pinned .story-panel:nth-child(2) {
+  opacity: var(--story-progress, 0);
+  transform: translateY(calc((1 - var(--story-progress, 0)) * 12px));
+}
 .is-pinned .story-panel.is-active {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
   pointer-events: auto;
 }
 .story-position {
