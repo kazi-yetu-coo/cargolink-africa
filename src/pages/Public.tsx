@@ -25,7 +25,7 @@ import {
   Select,
 } from "../components/ui";
 import type { ShipmentDetails } from "../lib/types";
-import { PopularRoutes } from "../components/popular-routes";
+import { PopularRoutes, popularRoutes } from "../components/popular-routes";
 import {
   modes,
   defaultScope,
@@ -252,10 +252,10 @@ const content: Record<
       "Find freight forwarding, transport, customs clearance and warehousing partners through one connected marketplace.",
   },
   routes: {
-    title: "Connect your business across borders.",
-    eyebrow: "TRADE ROUTES",
+    title: "Popular routes. Your next shipment.",
+    eyebrow: "POPULAR ROUTES",
     description:
-      "Explore a curated selection of African corridors and international gateways. Availability and pricing are confirmed by your selected provider.",
+      "Choose a route to start an inquiry with your origin and destination already filled in. Your provider will confirm availability and a quotation.",
   },
   "for-businesses": {
     title: "More visibility. Better freight decisions.",
@@ -348,28 +348,42 @@ export function ContentPage({ page: given }: { page?: string }) {
         </div>
       ) : page === "routes" ? (
         <div className="three-columns">
-          {[
-            ["Lagos", "Nairobi", "West to East Africa"],
-            ["Mombasa", "Kampala", "Northern Corridor"],
-            ["Dar es Salaam", "Kigali", "Central Corridor"],
-            ["Durban", "Lusaka", "Southern Africa"],
-            ["Shanghai", "Dar es Salaam", "Asia to Africa"],
-            ["Tema", "Ouagadougou", "West Africa"],
-          ].map(([a, b, s]) => (
-            <Panel key={a}>
-              <Badge>{s}</Badge>
+          {popularRoutes.map((route) => (
+            <Panel key={route.label}>
+              <Badge>{route.service}</Badge>
               <h2 className="route-title">
-                {a}
+                {route.origin.name}
                 <ArrowRight size={20} />
-                {b}
+                {route.destination.name}
               </h2>
               <p>
-                Request service options, transit estimates and a detailed
-                quotation.
+                {route.origin.country} to {route.destination.country}
               </p>
-              <ButtonLink to="/inquiry" variant="secondary">
-                Plan this shipment <ArrowUpRight size={15} />
-              </ButtonLink>
+              <Link
+                to="/inquiry"
+                className="button secondary"
+                onClick={() => {
+                  sessionStorage.setItem(
+                    "cargolink-inquiry",
+                    JSON.stringify({
+                      service: route.service,
+                      details: {
+                        origin: route.origin,
+                        destination: route.destination,
+                        ...(route.service === "Trucking"
+                          ? {
+                              pickupAddress: route.origin.name,
+                              deliveryAddress: route.destination.name,
+                            }
+                          : {}),
+                      },
+                      resumeStep: 0,
+                    }),
+                  );
+                }}
+              >
+                Get a quote for this route <ArrowUpRight size={15} />
+              </Link>
             </Panel>
           ))}
         </div>

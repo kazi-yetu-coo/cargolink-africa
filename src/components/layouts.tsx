@@ -50,7 +50,7 @@ export function PublicLayout() {
           </button>
           <nav className={open ? "open" : ""} onClick={() => setOpen(false)}>
             <NavLink to="/services">Ship</NavLink>
-            <NavLink to="/routes">Search rates</NavLink>
+            <NavLink to="/routes">Popular routes</NavLink>
             <NavLink to="/for-businesses">For businesses</NavLink>
             <NavLink to="/for-providers">For carriers</NavLink>
             <NavLink to="/resources">Resources</NavLink>
